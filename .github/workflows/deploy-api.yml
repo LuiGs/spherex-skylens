@@ -1,0 +1,28 @@
+name: Deploy API (Azure Container Apps)
+
+on:
+  push:
+    branches: [main]
+    paths: ["apps/api/**", ".github/workflows/deploy-api.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Enabled once the bootstrap sets AZURE_RESOURCE_GROUP / AZURE_ACR_NAME / AZURE_CREDENTIALS (docs/deploy-azure.md).
+    if: vars.AZURE_RESOURCE_GROUP != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}/apps/api
+          acrName: ${{ vars.AZURE_ACR_NAME }}
+          containerAppName: skylens-api
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+          imageToBuild: ${{ vars.AZURE_ACR_NAME }}.azurecr.io/skylens-api:${{ github.sha }}

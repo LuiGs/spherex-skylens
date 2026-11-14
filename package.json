@@ -1,0 +1,13 @@
+{
+  "name": "spherex-skylens",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev:web": "pnpm --filter @skylens/web dev",
+    "dev:api": "cd apps/api && uv run uvicorn skylens_api.main:app --reload",
+    "build": "pnpm --filter @skylens/web build",
+    "lint": "pnpm --filter @skylens/web lint && cd apps/api && uv run ruff check . && uv run ruff format --check .",
+    "test": "pnpm --filter @skylens/web test && cd apps/api && uv run pytest"
+  }
+}

@@ -1,0 +1,7 @@
+services:
+  api:
+    build: ./apps/api
+    ports:
+      - "8000:8000"
+    environment:
+      SKYLENS_CORS_ORIGINS: '["http://localhost:5173"]'

@@ -1,0 +1,23 @@
+name: Feature / tarea
+description: Unidad de trabajo con criterios de aceptación
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Objetivo
+      description: Qué problema resuelve para el usuario final.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Alcance
+      description: Archivos/módulos involucrados y qué queda fuera.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      description: Lista verificable (tests, comportamiento en móvil/PC, objetivos del challenge).
+    validations:
+      required: true
