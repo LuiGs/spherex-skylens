@@ -98,5 +98,10 @@ export function SkyView({ view, showGaia, onViewChange }: Props) {
     return () => clearTimeout(timer);
   }, [showGaia, view.ra, view.dec, view.fov]);
 
-  return <div ref={container} className="sky-view" aria-label="SPHEREx sky viewer" />;
+  // Aladin forces `position: relative` on its container, so it needs a sized wrapper.
+  return (
+    <div className="sky-view" aria-label="SPHEREx sky viewer">
+      <div ref={container} className="sky-canvas" />
+    </div>
+  );
 }
