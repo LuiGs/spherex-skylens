@@ -13,9 +13,9 @@ dominio de la web (`SKYLENS_CORS_ORIGINS`).
 
 1. **Crédito**: Global Offers → Microsoft → Azure → *Start free* ($200 por 30 días). Pide una tarjeta no prepaga para
    verificar; no se cobra nada mientras no pases a *pay-as-you-go*.
-2. **Presupuesto** (recomendado): Cost Management → Budgets → crear uno de USD 10 con alerta por mail.
-3. **Bootstrap**: con [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (`az login`) y
-   [GitHub CLI](https://cli.github.com/) (`gh auth login`), desde la raíz del repo:
+2. **Presupuesto** (recomendado): Cost Management → Budgets → crear uno de USD 25 con alertas por mail.
+3. **Bootstrap**: con [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (`az login`),
+   [GitHub CLI](https://cli.github.com/) (`gh auth login`) y Docker corriendo, desde la raíz del repo:
    ```bash
    bash scripts/azure-bootstrap.sh            # región por defecto: eastus2
    ```
@@ -25,6 +25,9 @@ dominio de la web (`SKYLENS_CORS_ORIGINS`).
    - Variables: `AZURE_RESOURCE_GROUP`, `AZURE_ACR_NAME`, `VITE_API_URL`.
 
    Si no, los deja en archivos en `~` con instrucciones para cargarlos a mano.
+
+   La primera imagen de la API se construye con Docker local (`linux/amd64`) porque las suscripciones de prueba no
+   permiten ACR Tasks (`az acr build`).
 4. Listo: cada PR recibe un preview de Static Web Apps y cada push a `main` despliega web y API.
 
 Mientras `AZURE_RESOURCE_GROUP` no exista, los workflows de deploy se saltean y el CI sigue funcionando.
