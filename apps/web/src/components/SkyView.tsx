@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import A from 'aladin-lite';
 import { angularDistance, normalizeDeg, type Equatorial } from '../lib/astro';
-import { SPHEREX_HIPS_URL } from '../lib/spherex';
+import { SPHEREX_HIPS_URL, WISE_HIPS_URL } from '../lib/spherex';
 import type { ViewState } from '../lib/urlState';
 
 interface Props {
@@ -18,6 +18,7 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
   const aladin = useRef<any>(null);
   const survey = useRef<any>(null);
   const gaia = useRef<any>(null);
+  const wise = useRef<any>(null);
   const markerOverlay = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const gaiaQuery = useRef<{ ra: number; dec: number; radius: number } | null>(null);
@@ -71,6 +72,21 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
   useEffect(() => {
     survey.current?.setSliceNumber?.(view.frame);
   }, [view.frame]);
+
+  useEffect(() => {
+    const instance = aladin.current;
+    if (!instance) return;
+    if (view.wise <= 0) {
+      if (wise.current) instance.removeImageLayer?.('wise');
+      wise.current = null;
+      return;
+    }
+    if (!wise.current) {
+      wise.current = instance.newImageSurvey(WISE_HIPS_URL, { name: 'AllWISE' });
+      instance.setOverlayImageLayer(wise.current, 'wise');
+    }
+    wise.current.setOpacity?.(view.wise);
+  }, [ready, view.wise]);
 
   useEffect(() => {
     const instance = aladin.current;
