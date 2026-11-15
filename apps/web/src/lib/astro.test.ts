@@ -10,6 +10,7 @@ import {
   parseDec,
   parseRa,
   predictPosition,
+  smoothPointing,
 } from './astro';
 import { CHALLENGE_TARGETS } from '../data/targets';
 
@@ -124,5 +125,14 @@ describe('astrometric predictions', () => {
     expect(earth).toHaveLength(3);
     expect(Math.hypot(...earth)).toBeGreaterThan(0.98);
     expect(Math.hypot(...earth)).toBeLessThan(1.02);
+  });
+});
+
+describe('smoothPointing', () => {
+  it('moves part of the way and wraps RA around 0°', () => {
+    expect(smoothPointing(null, { ra: 10, dec: 0 }, 0.3)).toEqual({ ra: 10, dec: 0 });
+    const half = smoothPointing({ ra: 359, dec: 0 }, { ra: 1, dec: 0 }, 0.5);
+    expect(half.ra === 0 || half.ra === 360 || Math.abs(half.ra) < 1e-9 || Math.abs(half.ra - 360) < 1e-9).toBe(true);
+    expect(smoothPointing({ ra: 0, dec: 0 }, { ra: 0, dec: 10 }, 0.25).dec).toBeGreaterThan(2);
   });
 });
