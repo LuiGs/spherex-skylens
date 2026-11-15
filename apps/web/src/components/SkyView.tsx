@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import A from 'aladin-lite';
-import { angularDistance } from '../lib/astro';
+import { angularDistance, normalizeDeg, type Equatorial } from '../lib/astro';
 import { SPHEREX_HIPS_URL } from '../lib/spherex';
 import type { ViewState } from '../lib/urlState';
 
@@ -8,14 +8,17 @@ interface Props {
   view: ViewState;
   showGaia: boolean;
   onViewChange: (patch: Partial<ViewState>) => void;
+  targetPosition: Equatorial | null;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- aladin-lite ships without types */
-export function SkyView({ view, showGaia, onViewChange }: Props) {
+export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<any>(null);
   const survey = useRef<any>(null);
   const gaia = useRef<any>(null);
+  const markerOverlay = useRef<any>(null);
+  const [ready, setReady] = useState(false);
   const gaiaQuery = useRef<{ ra: number; dec: number; radius: number } | null>(null);
   const onChange = useRef(onViewChange);
   onChange.current = onViewChange;
@@ -47,6 +50,7 @@ export function SkyView({ view, showGaia, onViewChange }: Props) {
       instance.on('zoomChanged', (fov: number) => onChange.current({ fov }));
       aladin.current = instance;
       survey.current = hips;
+      setReady(true);
     });
     return () => {
       cancelled = true;
@@ -66,6 +70,48 @@ export function SkyView({ view, showGaia, onViewChange }: Props) {
   useEffect(() => {
     survey.current?.setSliceNumber?.(view.frame);
   }, [view.frame]);
+
+  useEffect(() => {
+    const instance = aladin.current;
+    if (!instance) return;
+    if (markerOverlay.current) {
+      instance.removeOverlay(markerOverlay.current);
+      markerOverlay.current = null;
+    }
+    if (!targetPosition) return;
+
+    const color = '#f6ad55';
+    const overlay = A.graphicOverlay({ name: 'Posición esperada', color, lineWidth: 2 });
+    const ra = targetPosition.ra;
+    const dec = targetPosition.dec;
+    const halfCrosshairDeg = 3 / 3600;
+    const raHalfCrosshairDeg = halfCrosshairDeg / Math.cos((dec * Math.PI) / 180);
+    instance.addOverlay(overlay);
+    markerOverlay.current = overlay;
+    overlay.add(A.circle(ra, dec, 12 / 3600, { color, lineWidth: 2, fill: false }));
+    overlay.add(
+      A.polyline(
+        [
+          [normalizeDeg(ra - raHalfCrosshairDeg), dec],
+          [normalizeDeg(ra + raHalfCrosshairDeg), dec],
+        ],
+        { color, lineWidth: 2 },
+      ),
+    );
+    overlay.add(
+      A.polyline(
+        [
+          [ra, dec - halfCrosshairDeg],
+          [ra, dec + halfCrosshairDeg],
+        ],
+        { color, lineWidth: 2 },
+      ),
+    );
+    return () => {
+      instance.removeOverlay(overlay);
+      if (markerOverlay.current === overlay) markerOverlay.current = null;
+    };
+  }, [ready, targetPosition]);
 
   useEffect(() => {
     const instance = aladin.current;

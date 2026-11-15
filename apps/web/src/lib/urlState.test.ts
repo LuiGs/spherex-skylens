@@ -3,8 +3,14 @@ import { DEFAULT_VIEW, readViewState, writeViewState } from './urlState';
 
 describe('url state', () => {
   it('round-trips', () => {
-    const s = { ra: 10.5, dec: -20.25, fov: 0.5, frame: 12 };
+    const s = { ra: 10.5, dec: -20.25, fov: 0.5, frame: 12, target: null };
     expect(readViewState(writeViewState(s))).toEqual(s);
+  });
+
+  it('round-trips the selected target', () => {
+    const state = { ...DEFAULT_VIEW, target: 'wise-0855' };
+    expect(readViewState(writeViewState(state))).toEqual(state);
+    expect(readViewState('?target=wise-0855').target).toBe('wise-0855');
   });
 
   it('falls back to defaults on invalid values', () => {

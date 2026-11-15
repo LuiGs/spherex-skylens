@@ -1,3 +1,5 @@
+import type { Target } from '../data/targets';
+
 export interface Equatorial {
   ra: number;
   dec: number;
@@ -107,4 +109,61 @@ export function applyProperMotion(
   const dDec = (pmDecMasYr * years) / 3.6e6;
   const dRa = (pmRaMasYr * years) / 3.6e6 / Math.cos(dec * DEG);
   return { ra: normalizeDeg(ra + dRa), dec: dec + dDec };
+}
+
+export function mjdToJulianYear(mjd: number): number {
+  return 2000 + (mjd - 51544.5) / 365.25;
+}
+
+export function dateToMjd(date: Date): number {
+  return date.getTime() / 86400000 + 40587;
+}
+
+export function earthBarycentric(mjd: number): [number, number, number] {
+  const jd = mjd + 2400000.5;
+  const n = jd - 2451545;
+  const L = 280.460 + 0.9856474 * n;
+  const g = (357.528 + 0.9856003 * n) * DEG;
+  const lambda = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * DEG;
+  const radius = 1.00014 - 0.01671 * Math.cos(g) - 0.00014 * Math.cos(2 * g);
+  const epsilon = (23.439 - 0.0000004 * n) * DEG;
+  return [
+    -radius * Math.cos(lambda),
+    -radius * Math.cos(epsilon) * Math.sin(lambda),
+    -radius * Math.sin(epsilon) * Math.sin(lambda),
+  ];
+}
+
+export function predictPosition(target: Target, mjd: number): Equatorial {
+  const ra0 = target.ra * DEG;
+  const dec0 = target.dec * DEG;
+  const cosRa = Math.cos(ra0);
+  const sinRa = Math.sin(ra0);
+  const cosDec = Math.cos(dec0);
+  const sinDec = Math.sin(dec0);
+  const years = mjdToJulianYear(mjd) - target.epoch;
+  const radiansPerMas = DEG / 3_600_000;
+  const pmRa = (target.pmRa ?? 0) * radiansPerMas * years;
+  const pmDec = (target.pmDec ?? 0) * radiansPerMas * years;
+  const x = cosDec * cosRa - pmRa * sinRa - pmDec * cosRa * sinDec;
+  const y = cosDec * sinRa + pmRa * cosRa - pmDec * sinRa * sinDec;
+  const z = sinDec + pmDec * cosDec;
+  const norm = Math.hypot(x, y, z);
+  const ra = normalizeDeg(Math.atan2(y, x) / DEG);
+  const dec = Math.asin(z / norm);
+  const [earthX, earthY, earthZ] = earthBarycentric(mjd);
+  const parallaxDeg = (target.parallax ?? 0) / 3_600_000;
+  const alpha = ra * DEG;
+  const delta = dec;
+  const deltaAlphaCosDelta = parallaxDeg * (earthX * Math.sin(alpha) - earthY * Math.cos(alpha));
+  const deltaDelta =
+    parallaxDeg *
+    (earthX * Math.cos(alpha) * Math.sin(delta) +
+      earthY * Math.sin(alpha) * Math.sin(delta) -
+      earthZ * Math.cos(delta));
+
+  return {
+    ra: normalizeDeg(ra + deltaAlphaCosDelta / Math.cos(delta)),
+    dec: delta / DEG + deltaDelta,
+  };
 }

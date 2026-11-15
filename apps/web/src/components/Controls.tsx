@@ -1,8 +1,8 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
-import { CHALLENGE_TARGETS } from '../data/targets';
-import { useObservations } from '../hooks/useObservations';
-import { applyProperMotion, parseDec, parseRa } from '../lib/astro';
-import { formatEpochSummary } from '../lib/epochs';
+import { CHALLENGE_TARGETS, type Target } from '../data/targets';
+import type { ObservationsState } from '../hooks/useObservations';
+import { dateToMjd, parseDec, parseRa, predictPosition, type Equatorial } from '../lib/astro';
+import { formatEpochSummary, type Epoch } from '../lib/epochs';
 import { approxWavelength, frameToBandChannel, SPHEREX_CUBE_DEPTH } from '../lib/spherex';
 import type { ViewState } from '../lib/urlState';
 import { ObservationsPanel } from './ObservationsPanel';
@@ -14,9 +14,16 @@ interface Props {
   onToggleGaia: () => void;
   pointingStatus: string;
   onTogglePointing: () => void;
+  observationsState: ObservationsState;
+  retry: () => void;
+  selectedEpoch: Epoch | null;
+  onSelectEpoch: (epoch: Epoch) => void;
+  target: Target | null;
+  targetPosition: Equatorial | null;
+  targetDate: string;
+  onClearTarget: () => void;
 }
 
-const SPHEREX_EPOCH = 2025.8;
 const TABS = [
   { key: 'search', label: 'Buscar', panelId: 'controls-search' },
   { key: 'observations', label: 'Observaciones', panelId: 'controls-observations' },
@@ -24,12 +31,26 @@ const TABS = [
 ] as const;
 type MobileTab = (typeof TABS)[number]['key'];
 
-export function Controls({ view, onChange, showGaia, onToggleGaia, pointingStatus, onTogglePointing }: Props) {
+export function Controls({
+  view,
+  onChange,
+  showGaia,
+  onToggleGaia,
+  pointingStatus,
+  onTogglePointing,
+  observationsState,
+  retry,
+  selectedEpoch,
+  onSelectEpoch,
+  target,
+  targetPosition,
+  targetDate,
+  onClearTarget,
+}: Props) {
   const [raInput, setRaInput] = useState('');
   const [decInput, setDecInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
-  const { state: observationsState, retry } = useObservations(view.ra, view.dec, view.fov);
   const { band, channel } = frameToBandChannel(view.frame);
   const observationCount = observationsState.status === 'ready' ? observationsState.data.count : 0;
   const summary =
@@ -66,17 +87,13 @@ export function Controls({ view, onChange, showGaia, onToggleGaia, pointingStatu
       return;
     }
     setError(null);
-    onChange({ ra, dec });
+    onChange({ ra, dec, target: null });
   };
 
   const goToTarget = (id: string) => {
     const t = CHALLENGE_TARGETS.find((x) => x.id === id);
     if (!t) return;
-    const pos =
-      t.pmRa !== undefined && t.pmDec !== undefined
-        ? applyProperMotion(t, t.pmRa, t.pmDec, t.epoch, SPHEREX_EPOCH)
-        : { ra: t.ra, dec: t.dec };
-    onChange({ ...pos, fov: t.fov });
+    onChange({ ...predictPosition(t, dateToMjd(new Date())), fov: t.fov, target: t.id });
   };
 
   return (
@@ -130,7 +147,7 @@ export function Controls({ view, onChange, showGaia, onToggleGaia, pointingStatu
 
         <label>
           Objetivos del challenge
-          <select defaultValue="" onChange={(e) => goToTarget(e.target.value)}>
+          <select value={view.target ?? ''} onChange={(e) => goToTarget(e.target.value)}>
             <option value="" disabled>
               Elegí un objeto…
             </option>
@@ -142,9 +159,22 @@ export function Controls({ view, onChange, showGaia, onToggleGaia, pointingStatu
           </select>
         </label>
 
-        <p className="readout">
-          RA {view.ra.toFixed(5)}° · Dec {view.dec.toFixed(5)}° · FoV {view.fov.toFixed(3)}°
-        </p>
+        {target && targetPosition ? (
+          <>
+            <p className="readout target-readout">
+              Posición esperada · {target.name} · {targetDate}: RA {targetPosition.ra.toFixed(6)}° Dec{' '}
+              {targetPosition.dec.toFixed(6)}°
+            </p>
+            <p className="readout target-source">{target.source}</p>
+            <button type="button" className="remove-marker" onClick={onClearTarget}>
+              Quitar marcador
+            </button>
+          </>
+        ) : (
+          <p className="readout">
+            RA {view.ra.toFixed(5)}° · Dec {view.dec.toFixed(5)}° · FoV {view.fov.toFixed(3)}°
+          </p>
+        )}
       </section>
 
       <section id="controls-layers" className="control-section layers-section" role="tabpanel" aria-labelledby="tab-layers">
@@ -178,7 +208,12 @@ export function Controls({ view, onChange, showGaia, onToggleGaia, pointingStatu
         role="tabpanel"
         aria-labelledby="tab-observations"
       >
-        <ObservationsPanel state={observationsState} retry={retry} />
+        <ObservationsPanel
+          state={observationsState}
+          retry={retry}
+          selectedEpoch={selectedEpoch}
+          onSelectEpoch={onSelectEpoch}
+        />
       </section>
     </aside>
   );
