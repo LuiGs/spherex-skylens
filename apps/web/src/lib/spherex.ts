@@ -1,6 +1,9 @@
 import metadata from '../../../api/src/skylens_api/spherex_channels.json';
 
 /** SPHEREx DR1 all-sky HiPS cube served by NASA/IPAC IRSA (102 spectral frames, CORS enabled). */
+/** AllWISE colour HiPS (W1/W2/W4: 3.4, 4.6 and 22 µm), served by IRSA next to the SPHEREx cube. */
+export const WISE_HIPS_URL = 'https://irsa.ipac.caltech.edu/data/hips/CDS/AllWISE/RGB-W4-W2-W1';
+
 export const SPHEREX_HIPS_URL = 'https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube';
 export const SPHEREX_CUBE_DEPTH = 102;
 export const CHANNELS_PER_BAND = 17;

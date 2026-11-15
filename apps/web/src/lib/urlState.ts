@@ -15,6 +15,8 @@ export interface ViewState {
   /** Cutout size (deg) of the open timelapse, or null when it is closed. */
   timelapse: number | null;
   detector: number | null;
+  /** Opacity of the AllWISE comparison layer; 0 hides it. */
+  wise: number;
 }
 
 export const DEFAULT_VIEW: ViewState = {
@@ -29,6 +31,7 @@ export const DEFAULT_VIEW: ViewState = {
   target: null,
   timelapse: null,
   detector: null,
+  wise: 0,
 };
 
 const num = (v: string | null, fallback: number) => {
@@ -56,6 +59,7 @@ export function readViewState(search: string): ViewState {
     target: p.get('target') || null,
     timelapse: TIMELAPSE_SIZES.find((size) => size.deg === Number(p.get('tl')))?.deg ?? null,
     detector: [1, 2, 3, 4, 5, 6].includes(Number(p.get('det'))) ? Number(p.get('det')) : null,
+    wise: Math.round(clamp(num(p.get('wise'), 0), 0, 1) * 100) / 100,
   };
 }
 
@@ -73,5 +77,6 @@ export function writeViewState(state: ViewState): string {
   if (state.target) p.set('target', state.target);
   if (state.timelapse) p.set('tl', String(state.timelapse));
   if (state.detector) p.set('det', String(state.detector));
+  if (state.wise > 0) p.set('wise', String(state.wise));
   return `?${p.toString()}`;
 }

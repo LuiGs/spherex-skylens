@@ -4,7 +4,7 @@ import { angularDistance, normalizeDeg, type Equatorial } from '../lib/astro';
 import { createNavigationGrid } from '../lib/navigationGrid';
 import { attachSkyDrag } from '../lib/skyDrag';
 import { MAX_FOV, MIN_FOV } from '../lib/projection';
-import { spectralSurveyUrl, SPECTRAL_HIPS_OPTIONS } from '../lib/spherex';
+import { spectralSurveyUrl, SPECTRAL_HIPS_OPTIONS, WISE_HIPS_URL } from '../lib/spherex';
 import type { ViewState } from '../lib/urlState';
 import { useI18n } from '../lib/i18n';
 
@@ -24,6 +24,7 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<any>(null);
   const gaia = useRef<any>(null);
+  const wise = useRef<any>(null);
   const markerOverlay = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [spectralStatus, setSpectralStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -161,6 +162,21 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
     const timer = setTimeout(() => { void load(); }, 400);
     return () => { cancelled = true; clearTimeout(timer); clearTimeout(retryTimer); controller?.abort(); };
   }, [ready, surveyUrl, isComposite]);
+
+  useEffect(() => {
+    const instance = aladin.current;
+    if (!instance) return;
+    if (view.wise <= 0) {
+      if (wise.current) instance.removeImageLayer?.('wise');
+      wise.current = null;
+      return;
+    }
+    if (!wise.current) {
+      wise.current = instance.newImageSurvey(WISE_HIPS_URL, { name: 'AllWISE' });
+      instance.setOverlayImageLayer(wise.current, 'wise');
+    }
+    wise.current.setOpacity?.(view.wise);
+  }, [ready, view.wise]);
 
   useEffect(() => {
     const instance = aladin.current;
