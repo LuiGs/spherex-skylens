@@ -3,7 +3,7 @@ import { DEFAULT_VIEW, readViewState, writeViewState } from './urlState';
 
 describe('url state', () => {
   it('round-trips', () => {
-    const s = { ra: 10.5, dec: -20.25, fov: 0.5, frame: 12, target: null };
+    const s = { ra: 10.5, dec: -20.25, fov: 0.5, frame: 12, projection: 'TAN' as const, target: null };
     expect(readViewState(writeViewState(s))).toEqual(s);
   });
 
@@ -22,5 +22,14 @@ describe('url state', () => {
     expect(readViewState('?frame=-3').frame).toBe(0);
     expect(readViewState('?dec=120').dec).toBe(90);
     expect(readViewState('?ra=370').ra).toBeCloseTo(10);
+  });
+
+  it('keeps old links in SIN and restricts perspective links to a valid field of view', () => {
+    expect(readViewState('?fov=180').projection).toBe('SIN');
+    expect(readViewState('?projection=invalid').projection).toBe('SIN');
+    const perspective = readViewState('?projection=tan&fov=180');
+    expect(perspective.projection).toBe('TAN');
+    expect(perspective.fov).toBeLessThan(180);
+    expect(readViewState(writeViewState(perspective))).toEqual(perspective);
   });
 });

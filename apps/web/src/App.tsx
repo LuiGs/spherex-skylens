@@ -7,6 +7,7 @@ import { useSkyPointing } from './hooks/useSkyPointing';
 import { dateToMjd, predictPosition } from './lib/astro';
 import { mjdToDate, type Epoch } from './lib/epochs';
 import { readViewState, writeViewState, type ViewState } from './lib/urlState';
+import { clampFov } from './lib/projection';
 
 export default function App() {
   const [view, setView] = useState<ViewState>(() => readViewState(window.location.search));
@@ -15,7 +16,10 @@ export default function App() {
   const { state: observationsState, retry } = useObservations(view.ra, view.dec, view.fov);
 
   const update = useCallback((patch: Partial<ViewState>) => {
-    setView((v) => ({ ...v, ...patch }));
+    setView((v) => {
+      const next = { ...v, ...patch };
+      return { ...next, fov: clampFov(next.fov, next.projection) };
+    });
     if (patch.ra !== undefined || patch.dec !== undefined || patch.fov !== undefined) setSelectedEpoch(null);
   }, []);
   const pointing = useSkyPointing(update);

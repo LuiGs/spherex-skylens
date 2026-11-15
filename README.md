@@ -12,8 +12,9 @@ para encontrar objetos en movimiento (enanas marrones, asteroides, cometas…).
 | Estado | Funcionalidad |
 | --- | --- |
 | ✅ | Visor del cielo SPHEREx DR1 (HiPS de IRSA, 102 bandas) con Aladin Lite |
+| ✅ | Selector SIN/TAN y cuadrícula de coordenadas que aparece al navegar y se desvanece al detenerse |
 | ✅ | Búsqueda por RA/Dec (sexagesimal o decimal) y objetivos del challenge con movimiento propio |
-| ✅ | Links compartibles `?ra=&dec=&fov=&frame=` |
+| ✅ | Links compartibles `?ra=&dec=&fov=&frame=&projection=` |
 | ✅ | Modo "apuntá el celular" (orientación + GPS + hora → RA/Dec) |
 | ✅ | API: listado de imágenes SPHEREx por época/detector con URLs de cutout |
 | 🚧 | Timelapse / blink de cutouts por época (el "video") |
@@ -48,6 +49,11 @@ pnpm lint && pnpm test && pnpm build
 
 Ejemplos: [WISE 0855](http://localhost:5173/?ra=133.795129&dec=-7.245147&fov=0.2&frame=90) ·
 API: `GET /api/v1/observations?ra=133.795129&dec=-7.245147&detector=3`
+
+En **Capas → Proyección del cielo**, elegí **SIN · mapa** o **TAN · perspectiva**. La elección se conserva en la URL.
+La cuadrícula RA/Dec sigue la proyección y aparece al arrastrar, hacer zoom o apuntar con el celular; después se
+desvanece al dejar de navegar, incluso si todavía no se cargaron las imágenes. TAN limita el campo de visión a 170°
+para evitar la singularidad de la perspectiva a 180°.
 
 > El modo "apuntá el celular" requiere HTTPS (o `localhost`) para acceder a los sensores. Para probar en un
 > teléfono en la misma red usá un túnel HTTPS (p. ej. `cloudflared tunnel --url http://localhost:5173`).

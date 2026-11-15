@@ -178,6 +178,28 @@ export function Controls({
       </section>
 
       <section id="controls-layers" className="control-section layers-section" role="tabpanel" aria-labelledby="tab-layers">
+        <fieldset className="projection-control">
+          <legend>Proyección del cielo</legend>
+          <div className="projection-options">
+            <button
+              type="button"
+              aria-pressed={view.projection === 'SIN'}
+              title="SIN: mapa ortográfico del cielo"
+              onClick={() => onChange({ projection: 'SIN' })}
+            >
+              SIN · mapa
+            </button>
+            <button
+              type="button"
+              aria-pressed={view.projection === 'TAN'}
+              title="TAN: perspectiva desde el observador"
+              onClick={() => onChange({ projection: 'TAN' })}
+            >
+              TAN · perspectiva
+            </button>
+          </div>
+        </fieldset>
+
         <label>
           Banda D{band} · canal {channel} · ~{approxWavelength(view.frame).toFixed(2)} µm
           <input
