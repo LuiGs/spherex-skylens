@@ -705,3 +705,29 @@ button.secondary {
   margin-right: 3px;
   border-radius: 50%;
 }
+
+.heading-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.lang-button {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 599px) {
+  .controls-heading {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+  }
+
+  .controls[data-mobile-tab='collapsed'] .controls-heading {
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
