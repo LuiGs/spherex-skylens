@@ -12,7 +12,7 @@ para encontrar objetos en movimiento (enanas marrones, asteroides, cometas…).
 | Estado | Funcionalidad |
 | --- | --- |
 | ✅ | Visor del cielo SPHEREx DR1 (HiPS de IRSA, 102 bandas) con Aladin Lite |
-| ✅ | Selector SIN/TAN y cuadrícula de coordenadas que aparece al navegar y se desvanece al detenerse |
+| ✅ | Selector SIN/TAN y cuadrícula de coordenadas con niveles ligados al zoom y etiquetas en grados |
 | ✅ | Búsqueda por RA/Dec (sexagesimal o decimal) y objetivos del challenge con movimiento propio |
 | ✅ | Links compartibles `?ra=&dec=&fov=&frame=&projection=` |
 | ✅ | Modo "apuntá el celular" (orientación + GPS + hora → RA/Dec) |
@@ -51,8 +51,11 @@ Ejemplos: [WISE 0855](http://localhost:5173/?ra=133.795129&dec=-7.245147&fov=0.2
 API: `GET /api/v1/observations?ra=133.795129&dec=-7.245147&detector=3`
 
 En **Capas → Proyección del cielo**, elegí **SIN · mapa** o **TAN · perspectiva**. La elección se conserva en la URL.
-La cuadrícula RA/Dec sigue la proyección y aparece al arrastrar, hacer zoom o apuntar con el celular; después se
-desvanece al dejar de navegar, incluso si todavía no se cargaron las imágenes. TAN limita el campo de visión a 170°
+La cuadrícula RA/Dec sigue la proyección, aparece al mover la cámara y se desvanece suavemente al detenerla,
+incluso sin imágenes. Los niveles de detalle cambian
+con el zoom mediante una transición suave; mover la vista no cambia el espaciado angular de los círculos.
+Las etiquetas siguen la dirección de las curvas e indican AR y Dec en grados, sin ceros de relleno.
+El arrastre con mouse conserva la orientación completa de la cámara al cruzar los polos. TAN limita el campo de visión a 170°
 para evitar la singularidad de la perspectiva a 180°.
 
 > El modo "apuntá el celular" requiere HTTPS (o `localhost`) para acceder a los sensores. Para probar en un

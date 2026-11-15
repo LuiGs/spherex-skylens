@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import A from 'aladin-lite';
 import { angularDistance, normalizeDeg, type Equatorial } from '../lib/astro';
 import { createNavigationGrid } from '../lib/navigationGrid';
+import { attachSkyDrag } from '../lib/skyDrag';
 import { MAX_FOV, MIN_FOV } from '../lib/projection';
 import { SPHEREX_HIPS_URL } from '../lib/spherex';
 import type { ViewState } from '../lib/urlState';
@@ -26,6 +27,7 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
   onChange.current = onViewChange;
   const latestView = useRef(view);
   latestView.current = view;
+  const reportedCenter = useRef<Equatorial | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,35 +56,33 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
         successCallback: (layer: any) => layer.setSliceNumber?.(latestView.current.frame),
       });
       instance.setBaseImageLayer(hips);
-      const grid = createNavigationGrid((options) => instance.setCooGrid(options));
-      const drag = (event: PointerEvent) => {
-        if (event.buttons || event.pointerType === 'touch') grid.show();
-      };
-      element.addEventListener('pointerdown', grid.show, { capture: true, passive: true });
-      element.addEventListener('pointermove', drag, { capture: true, passive: true });
-      element.addEventListener('wheel', grid.show, { capture: true, passive: true });
+      const grid = createNavigationGrid(instance, element);
+      const detachDrag = attachSkyDrag(instance, element);
       instance.on('positionChanged', ({ ra, dec }: { ra: number; dec: number }) => {
-        grid.show();
+        reportedCenter.current = { ra, dec };
+        grid.update();
         onChange.current({ ra, dec });
       });
       instance.on('zoomChanged', (fov: number) => {
-        grid.show();
+        grid.update();
         onChange.current({ fov });
       });
-      instance.on('rotationChanged', grid.show);
-      instance.on('projectionChanged', grid.show);
+      instance.on('rotationChanged', grid.update);
+      instance.on('projectionChanged', grid.update);
+      element.addEventListener('AL:position.changed', grid.update);
+      element.addEventListener('AL:zoom.changed', grid.update);
       cleanupNavigation = () => {
         grid.dispose();
-        element.removeEventListener('pointerdown', grid.show, true);
-        element.removeEventListener('pointermove', drag, true);
-        element.removeEventListener('wheel', grid.show, true);
+        detachDrag();
+        element.removeEventListener('AL:position.changed', grid.update);
+        element.removeEventListener('AL:zoom.changed', grid.update);
         for (const event of ['positionChanged', 'zoomChanged', 'rotationChanged', 'projectionChanged']) {
           instance.on(event, undefined);
         }
       };
       aladin.current = instance;
       survey.current = hips;
-      grid.show();
+      grid.update();
       setReady(true);
     });
     return () => {
@@ -103,7 +103,9 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
     const instance = aladin.current;
     if (!instance) return;
     const [ra, dec] = instance.getRaDec();
-    if (Math.abs(ra - view.ra) > 1e-6 || Math.abs(dec - view.dec) > 1e-6) instance.gotoRaDec(view.ra, view.dec);
+    const requested = { ra: view.ra, dec: view.dec };
+    const isCameraFeedback = reportedCenter.current && angularDistance(reportedCenter.current, requested) < 1e-6;
+    if (!isCameraFeedback && angularDistance({ ra, dec }, requested) > 1e-6) instance.gotoRaDec(view.ra, view.dec);
     if (Math.abs(instance.getFov()[0] - view.fov) > 1e-6) instance.setFoV(view.fov);
   }, [ready, view.ra, view.dec, view.fov]);
 
