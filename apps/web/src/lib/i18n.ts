@@ -10,6 +10,9 @@ const es = {
   tagline: 'El cielo infrarrojo de la NASA',
   switchTo: 'English',
   help: 'Cómo se usa',
+  share: 'Compartir este cielo',
+  shareCopied: 'Link copiado',
+  shareFailed: 'No se pudo copiar el link',
   tabs: { search: 'Buscar', observations: 'Observaciones', layers: 'Capas', label: 'Controles del mapa' },
   summary: { loading: 'Buscando observaciones…', empty: 'Sin observaciones', error: 'Observaciones no disponibles' },
   search: {
@@ -185,6 +188,9 @@ const en: Messages = {
   tagline: 'NASA’s infrared sky',
   switchTo: 'Español',
   help: 'How it works',
+  share: 'Share this sky',
+  shareCopied: 'Link copied',
+  shareFailed: 'Could not copy the link',
   tabs: { search: 'Search', observations: 'Observations', layers: 'Layers', label: 'Map controls' },
   summary: { loading: 'Looking for observations…', empty: 'No observations', error: 'Observations unavailable' },
   search: {
