@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_VIEW, readViewState, writeViewState } from './urlState';
 
 describe('url state', () => {
+  it('preserves the composite range and accepts reversed or out-of-range limits safely', () => {
+    const state = { ...DEFAULT_VIEW, spectralMode: 'color' as const, minFrame: 15, maxFrame: 80 };
+    expect(readViewState(writeViewState(state))).toEqual(state);
+    expect(readViewState('?min=90&max=10&mode=color').minFrame).toBe(10);
+    expect(readViewState('?min=-10&max=200').maxFrame).toBe(101);
+    expect(readViewState('?frame=40').spectralMode).toBe('mono');
+  });
   it('round-trips', () => {
-    const s = { ra: 10.5, dec: -20.25, fov: 0.5, frame: 12, projection: 'TAN' as const, target: null };
+    const s = { ...DEFAULT_VIEW, ra: 10.5, dec: -20.25, fov: 0.5, frame: 12, projection: 'TAN' as const, target: null };
     expect(readViewState(writeViewState(s))).toEqual(s);
   });
 

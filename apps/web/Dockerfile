@@ -6,6 +6,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/package.json
 RUN pnpm install --frozen-lockfile
 COPY apps/web ./apps/web
+COPY apps/api/src/skylens_api/spherex_channels.json ./apps/api/src/skylens_api/spherex_channels.json
 RUN pnpm --filter @skylens/web build
 
 FROM nginx:stable-alpine

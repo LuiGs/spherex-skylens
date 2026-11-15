@@ -66,16 +66,19 @@ export function createNavigationGrid(map: SkyMap, element: HTMLElement) {
       } catch { return []; }
     });
     const occupied: number[][] = [];
+    const labelLimit = Math.max(6, Math.min(14, Math.floor(width * height / 75000)));
+    let raLabels = 0;
     const layer = (spacing: number, alpha: number, labels: boolean) => {
       const color = `rgba(139,188,255,${0.42 * alpha})`;
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
       ctx.font = '12px system-ui';
-      const curve = (points: number[][], text: string) => {
+      const curve = (points: number[][], text: string, labelAllowed = true) => {
         let last: number[] | null = null;
         let label: { point: number[]; angle: number; score: number } | null = null;
         ctx.beginPath();
         for (const [lon, lat] of points) {
+          if (!Number.isFinite(lat)) { last = null; continue; }
           const latitude = lat * Math.PI / 180;
           const facing = sinDec * Math.sin(latitude) + cosDec * Math.cos(latitude) * Math.cos((lon - ra) * Math.PI / 180);
           if (facing <= 1e-10) { last = null; continue; }
@@ -85,8 +88,8 @@ export function createNavigationGrid(map: SkyMap, element: HTMLElement) {
           const [x, y] = point;
           if (last && Math.hypot(x - last[0], y - last[1]) < Math.max(width, height) / 3) ctx.lineTo(x, y);
           else ctx.moveTo(x, y);
-          if (last && x > 70 && x < width - 100 && y > 25 && y < height - 25 &&
-              poles.every(([px, py]) => Math.hypot(x - px, y - py) > 80) &&
+          if (labels && labelAllowed && occupied.length < labelLimit && last && x > 70 && x < width - 100 && y > 25 && y < height - 25 &&
+              poles.every(([px, py]) => Math.hypot(x - px, y - py) > Math.min(width, height) * 0.23) &&
               occupied.every(([ox, oy]) => Math.abs(x - ox) > 105 || Math.abs(y - oy) > 28)) {
             const score = Math.hypot(x - width / 2, y - height / 2);
             if (!label || score < label.score) {
@@ -99,7 +102,8 @@ export function createNavigationGrid(map: SkyMap, element: HTMLElement) {
           last = point;
         }
         ctx.stroke();
-        if (labels && label) {
+        if (labels && label && occupied.length < labelLimit) {
+          if (text.startsWith('AR')) raLabels++;
           occupied.push(label.point);
           ctx.save();
           ctx.translate(label.point[0], label.point[1]);
@@ -122,18 +126,27 @@ export function createNavigationGrid(map: SkyMap, element: HTMLElement) {
       // Limit overlap of meridians converging at a pole; keep declination circles fixed.
       const stride = Math.max(1, Math.ceil((highRa - lowRa) / spacing / 120));
       const seenMeridians = new Set<string>();
+      const polar = poles.some(([x, y]) => x >= 0 && x <= width && y >= 0 && y <= height);
+      const majorStride = Math.max(1, Math.ceil(360 / spacing / 12));
       for (let n = Math.ceil(lowRa / spacing / stride) * stride; n <= Math.floor(highRa / spacing); n += stride) {
         const longitude = ((n * spacing % 360) + 360) % 360;
         const key = longitude.toFixed(8);
         if (seenMeridians.has(key)) continue;
         seenMeridians.add(key);
-        curve(Array.from({ length: 161 }, (_, i) => [longitude, lowDec + (highDec - lowDec) * i / 160]), gridLabel(longitude, 'AR', spacing));
+        const major = n % majorStride === 0;
+        const samples = Array.from({ length: 161 }, (_, i) => {
+          const latitude = lowDec + (highDec - lowDec) * i / 160;
+          // Keep only the major meridians inside the two circles closest to a visible pole.
+          return [longitude, polar && !major && 90 - Math.abs(latitude) < spacing * 2 ? NaN : latitude];
+        });
+        curve(samples, gridLabel(longitude, 'AR', spacing), raLabels < 8 && (!polar || major));
       }
     };
     if (previousStep !== undefined && progress < 1) layer(previousStep, 1 - progress, false);
     layer(step, previousStep === undefined ? 1 : progress, true);
     if (previousStep !== undefined && progress < 1) animation = requestAnimationFrame(draw);
     else previousStep = undefined;
+    canvas.dataset.labels = String(occupied.length);
   };
   const update = () => { if (!disposed && animation === undefined) animation = requestAnimationFrame(draw); };
   const resize = new ResizeObserver(update);

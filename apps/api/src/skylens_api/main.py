@@ -6,12 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .irsa import IrsaClient
-from .routers import observations, timelapse
+from .routers import observations, spectral, timelapse
+from .spectral import SpectralTiles
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.irsa = IrsaClient(get_settings())
+    app.state.spectral = SpectralTiles(app.state.irsa, get_settings())
     app.state.timelapse = timelapse.TimelapseService(app.state.irsa, get_settings())
     yield
     await app.state.irsa.aclose()
@@ -23,6 +25,7 @@ def create_app() -> FastAPI:
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["GET"], allow_headers=["*"])
     app.include_router(observations.router)
     app.include_router(timelapse.router)
+    app.include_router(spectral.router)
 
     @app.get("/health", tags=["meta"])
     async def health() -> dict[str, str]:

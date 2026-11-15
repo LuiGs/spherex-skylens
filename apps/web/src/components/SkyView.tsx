@@ -4,7 +4,7 @@ import { angularDistance, normalizeDeg, type Equatorial } from '../lib/astro';
 import { createNavigationGrid } from '../lib/navigationGrid';
 import { attachSkyDrag } from '../lib/skyDrag';
 import { MAX_FOV, MIN_FOV } from '../lib/projection';
-import { SPHEREX_HIPS_URL } from '../lib/spherex';
+import { spectralSurveyUrl, SPECTRAL_HIPS_OPTIONS } from '../lib/spherex';
 import type { ViewState } from '../lib/urlState';
 
 interface Props {
@@ -16,12 +16,15 @@ interface Props {
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- aladin-lite ships without types */
 export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props) {
+  const surveyUrl = spectralSurveyUrl(view);
+  const isComposite = view.spectralMode === 'color';
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<any>(null);
-  const survey = useRef<any>(null);
   const gaia = useRef<any>(null);
   const markerOverlay = useRef<any>(null);
   const [ready, setReady] = useState(false);
+  const [spectralStatus, setSpectralStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const surveyGeneration = useRef(0);
   const gaiaQuery = useRef<{ ra: number; dec: number; radius: number } | null>(null);
   const onChange = useRef(onViewChange);
   onChange.current = onViewChange;
@@ -40,6 +43,7 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
         fov: initialView.fov,
         target: `${initialView.ra} ${initialView.dec}`,
         projection: initialView.projection,
+        survey: A.HiPS(spectralSurveyUrl(initialView), SPECTRAL_HIPS_OPTIONS),
         cooFrame: 'ICRS',
         showReticle: true,
         showCooGrid: false,
@@ -50,12 +54,6 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
         showLayersControl: false,
         showFullscreenControl: false,
       });
-      // Aladin ignores setSliceNumber until the survey is loaded, so apply the frame once it is.
-      const hips = instance.newImageSurvey(SPHEREX_HIPS_URL, {
-        name: 'SPHEREx DR1',
-        successCallback: (layer: any) => layer.setSliceNumber?.(latestView.current.frame),
-      });
-      instance.setBaseImageLayer(hips);
       const grid = createNavigationGrid(instance, element);
       const detachDrag = attachSkyDrag(instance, element);
       instance.on('positionChanged', ({ ra, dec }: { ra: number; dec: number }) => {
@@ -81,7 +79,6 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
         }
       };
       aladin.current = instance;
-      survey.current = hips;
       grid.update();
       setReady(true);
     });
@@ -110,8 +107,57 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
   }, [ready, view.ra, view.dec, view.fov]);
 
   useEffect(() => {
-    survey.current?.setSliceNumber?.(view.frame);
-  }, [ready, view.frame]);
+    if (!ready) return;
+    let cancelled = false;
+    let controller: AbortController | undefined;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryDelay = 2000;
+    let attempt = 0;
+    const failed = () => {
+      if (cancelled) return;
+      setSpectralStatus('error');
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => { void load(); }, retryDelay);
+      retryDelay = Math.min(30000, retryDelay * 2);
+    };
+    const load = async () => {
+      const currentAttempt = ++attempt;
+      const requestController = new AbortController();
+      controller = requestController;
+      setSpectralStatus('loading');
+      const timeout = setTimeout(() => requestController.abort(), 45000);
+      try {
+        const instance = aladin.current;
+        const [ra, dec] = instance.getRaDec();
+        const order = Math.min(5, Math.max(0, Math.floor(instance.view.realNorder ?? 2)));
+        const response = await fetch(`${surveyUrl}/prepare?${new URLSearchParams({ ra: String(normalizeDeg(ra)), dec: String(dec), order: String(order) })}`, { signal: requestController.signal });
+        if (!response.ok) throw new Error('Unable to load spectral images');
+        if (cancelled) return;
+        // A new identity also clears Aladin's failed-tile cache when revisiting a range.
+        const identity = `skylens-display-${++surveyGeneration.current}`;
+        const hips = instance.newImageSurvey(identity, {
+          ...SPECTRAL_HIPS_OPTIONS,
+          url: surveyUrl,
+          creatorDid: identity,
+          name: isComposite ? 'SPHEREx · composición espectral' : 'SPHEREx · monocromática',
+          successCallback: () => {
+            if (!cancelled && attempt === currentAttempt) {
+              retryDelay = 2000;
+              setSpectralStatus('ready');
+            }
+          },
+          errorCallback: () => { if (attempt === currentAttempt) failed(); },
+        });
+        instance.setBaseImageLayer(hips);
+      } catch {
+        failed();
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+    const timer = setTimeout(() => { void load(); }, 400);
+    return () => { cancelled = true; clearTimeout(timer); clearTimeout(retryTimer); controller?.abort(); };
+  }, [ready, surveyUrl, isComposite]);
 
   useEffect(() => {
     const instance = aladin.current;
@@ -190,6 +236,11 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
   return (
     <div className="sky-view" aria-label="SPHEREx sky viewer">
       <div ref={container} className="sky-canvas" />
+      {spectralStatus !== 'ready' && (
+        <div className="spectral-status" role="status">
+          {spectralStatus === 'loading' ? 'Cargando imágenes…' : 'Esperando imágenes…'}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ para encontrar objetos en movimiento (enanas marrones, asteroides, cometas…).
 | Estado | Funcionalidad |
 | --- | --- |
 | ✅ | Visor del cielo SPHEREx DR1 (HiPS de IRSA, 102 bandas) con Aladin Lite |
+| ✅ | Un canal monocromático o composición de un rango de canales en azul–verde–rojo según su longitud de onda |
 | ✅ | Selector SIN/TAN y cuadrícula de coordenadas con niveles ligados al zoom y etiquetas en grados |
 | ✅ | Búsqueda por RA/Dec (sexagesimal o decimal) y objetivos del challenge con movimiento propio |
 | ✅ | Links compartibles `?ra=&dec=&fov=&frame=&projection=` |
@@ -50,13 +51,31 @@ pnpm lint && pnpm test && pnpm build
 Ejemplos: [WISE 0855](http://localhost:5173/?ra=133.795129&dec=-7.245147&fov=0.2&frame=90) ·
 API: `GET /api/v1/observations?ra=133.795129&dec=-7.245147&detector=3`
 
+En **Capas → Luz infrarroja**, el switch alterna un canal **monocromático** con una composición de **varios canales
+en color**. Elegí mínimo y máximo con los dos controles; se ajustan a los canales publicados y las flechas del
+teclado avanzan de a uno. La tira inferior muestra D1–D6 y cada canal a su posición real en µm; los dos canales
+sin datos aparecen rayados y se omiten. El azul corresponde al extremo de menor longitud de onda, el verde al
+centro y el rojo al extremo mayor. El color se calcula por µm, no por número de canal. El rango y el modo quedan
+en la URL (`mode=color&min=0&max=101`, índices de canal desde cero).
+
+La API compone los tiles PNG de IRSA y los guarda en caché (volumen `spectral-cache` en Docker). Es una
+composición para explorar visualmente, con normalización por componente RGB; las mediciones científicas deben
+usar los FITS originales. Las longitudes de onda centrales se comparten entre web y API desde
+`apps/api/src/skylens_api/spherex_channels.json`, tomadas de las propiedades oficiales del HiPS DR1.
+
 En **Capas → Proyección del cielo**, elegí **SIN · mapa** o **TAN · perspectiva**. La elección se conserva en la URL.
 La cuadrícula RA/Dec sigue la proyección, aparece al mover la cámara y se desvanece suavemente al detenerla,
 incluso sin imágenes. Los niveles de detalle cambian
 con el zoom mediante una transición suave; mover la vista no cambia el espaciado angular de los círculos.
 Las etiquetas siguen la dirección de las curvas e indican AR y Dec en grados, sin ceros de relleno.
+Hay un máximo de 14 etiquetas (8 de AR); los meridianos secundarios se interrumpen cerca del polo para evitar
+que tapen las imágenes. El límite se reduce en pantallas pequeñas.
 El arrastre con mouse conserva la orientación completa de la cámara al cruzar los polos. TAN limita el campo de visión a 170°
 para evitar la singularidad de la perspectiva a 180°.
+
+Al cambiar el rango o el modo espectral se prepara primero el tile central y su vista de menor resolución,
+conservando la imagen anterior. Las selecciones obsoletas se cancelan. Si la carga falla, se reintenta automáticamente;
+el nuevo intento utiliza una identidad de capa nueva para evitar reutilizar tiles fallidos de Aladin.
 
 > El modo "apuntá el celular" requiere HTTPS (o `localhost`) para acceder a los sensores. Para probar en un
 > teléfono en la misma red usá un túnel HTTPS (p. ej. `cloudflared tunnel --url http://localhost:5173`).

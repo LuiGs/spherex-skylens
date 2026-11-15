@@ -3,7 +3,7 @@ import { CHALLENGE_TARGETS, type Target } from '../data/targets';
 import type { ObservationsState } from '../hooks/useObservations';
 import { dateToMjd, parseDec, parseRa, predictPosition, type Equatorial } from '../lib/astro';
 import { formatEpochSummary, type Epoch } from '../lib/epochs';
-import { approxWavelength, frameToBandChannel, SPHEREX_CUBE_DEPTH } from '../lib/spherex';
+import { SpectralControls } from './SpectralControls';
 import type { ViewState } from '../lib/urlState';
 import { ObservationsPanel } from './ObservationsPanel';
 
@@ -51,7 +51,6 @@ export function Controls({
   const [decInput, setDecInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
-  const { band, channel } = frameToBandChannel(view.frame);
   const observationCount = observationsState.status === 'ready' ? observationsState.data.count : 0;
   const summary =
     observationsState.status === 'ready'
@@ -200,16 +199,7 @@ export function Controls({
           </div>
         </fieldset>
 
-        <label>
-          Banda D{band} · canal {channel} · ~{approxWavelength(view.frame).toFixed(2)} µm
-          <input
-            type="range"
-            min={0}
-            max={SPHEREX_CUBE_DEPTH - 1}
-            value={view.frame}
-            onChange={(e) => onChange({ frame: Number(e.target.value) })}
-          />
-        </label>
+        <SpectralControls view={view} onChange={onChange} />
 
         <div className="toggles">
           <button type="button" onClick={onToggleGaia} aria-pressed={showGaia}>

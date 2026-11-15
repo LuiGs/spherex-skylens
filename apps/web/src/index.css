@@ -289,6 +289,30 @@ button[aria-pressed='true'] {
   border: 0;
 }
 
+.spectral-control {
+  min-width: 0;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #343a58;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.spectral-control legend { padding: 0 5px; font-size: 0.85rem; }
+.controls .spectral-toggle { flex-direction: row; align-items: center; gap: 8px; }
+.spectral-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.spectral-slider span { display: flex; justify-content: space-between; gap: 8px; }
+.spectral-slider input { width: 100%; accent-color: #a18cff; padding: 0; }
+.spectral-control small { color: #adb8cc; font-size: 0.72rem; }
+.spectral-strip { position: relative; height: 24px; overflow: hidden; border: 1px solid #59617b; border-radius: 4px; }
+.spectral-strip span { position: absolute; top: 0; height: 100%; border-right: 1px solid #05060a88; }
+.spectral-strip .spectral-blank { background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, #8290a7 2px, #8290a7 3px); }
+.spectral-bands { position: relative; height: 20px; }
+.spectral-bands span { position: absolute; text-align: center; border-left: 1px solid #343a58; font-size: 0.7rem; color: #76839d; }
+.spectral-bands span[data-selected='true'] { color: #e6e9f2; }
+.spectral-status { position: absolute; top: 12px; right: 12px; z-index: 5; max-width: min(300px, 45vw); padding: 8px 12px; border-radius: 8px; background: #0a0c16dd; font-size: 0.8rem; }
+
 .projection-control legend {
   margin-bottom: 6px;
   padding: 0;
