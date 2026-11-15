@@ -17,6 +17,7 @@ import { readViewState, writeViewState, type ViewState } from './lib/urlState';
 export default function App() {
   const [view, setView] = useState<ViewState>(() => readViewState(window.location.search));
   const [showGaia, setShowGaia] = useState(false);
+  const [gaiaMotion, setGaiaMotion] = useState<{ years: number; count: number } | null>(null);
   const [selectedEpoch, setSelectedEpoch] = useState<Epoch | null>(null);
   const [spectrumAt, setSpectrumAt] = useState<Equatorial | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
@@ -71,12 +72,14 @@ export default function App() {
         onViewChange={update}
         targetPosition={targetPosition}
         timelapseBox={timelapseBox}
+        onGaiaMotion={setGaiaMotion}
       />
       <Controls
         view={view}
         onChange={update}
         showGaia={showGaia}
         onToggleGaia={() => setShowGaia((s) => !s)}
+        gaiaMotion={showGaia ? gaiaMotion : null}
         pointingStatus={pointing.status}
         onTogglePointing={() => (pointing.status === 'active' ? pointing.stop() : pointing.start())}
         observationsState={observationsState}
