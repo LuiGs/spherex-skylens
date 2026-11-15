@@ -9,10 +9,11 @@ interface Props {
   showGaia: boolean;
   onViewChange: (patch: Partial<ViewState>) => void;
   targetPosition: Equatorial | null;
+  timelapseBox: (Equatorial & { size: number }) | null;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- aladin-lite ships without types */
-export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props) {
+export function SkyView({ view, showGaia, onViewChange, targetPosition, timelapseBox }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<any>(null);
   const survey = useRef<any>(null);
@@ -112,6 +113,29 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
       if (markerOverlay.current === overlay) markerOverlay.current = null;
     };
   }, [ready, targetPosition]);
+
+  useEffect(() => {
+    const instance = aladin.current;
+    if (!instance || !timelapseBox) return;
+    const { ra, dec, size } = timelapseBox;
+    const half = size / 2;
+    const raHalf = half / Math.cos((dec * Math.PI) / 180);
+    const overlay = A.graphicOverlay({ name: 'Timelapse', color: '#a18cff', lineWidth: 2 });
+    instance.addOverlay(overlay);
+    overlay.add(
+      A.polyline(
+        [
+          [normalizeDeg(ra - raHalf), dec - half],
+          [normalizeDeg(ra + raHalf), dec - half],
+          [normalizeDeg(ra + raHalf), dec + half],
+          [normalizeDeg(ra - raHalf), dec + half],
+          [normalizeDeg(ra - raHalf), dec - half],
+        ],
+        { color: '#a18cff', lineWidth: 2 },
+      ),
+    );
+    return () => instance.removeOverlay(overlay);
+  }, [ready, timelapseBox]);
 
   useEffect(() => {
     const instance = aladin.current;

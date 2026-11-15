@@ -333,3 +333,206 @@ button[aria-pressed='true'] {
   }
 
 }
+
+.timelapse {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100dvh - 16px);
+  padding: 10px 12px;
+  overflow-y: auto;
+  border: 1px solid #343a58;
+  border-radius: 14px;
+  background: rgba(10, 12, 22, 0.94);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+
+.timelapse-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.timelapse-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.timelapse-header p,
+.timelapse-caption,
+.timelapse-hint {
+  margin: 0;
+  color: #c0c6d9;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.icon-button {
+  padding: 4px 9px;
+  border-color: #454b67;
+  background: #292d43;
+}
+
+.timelapse-stage {
+  position: relative;
+  width: min(100%, 46dvh);
+  aspect-ratio: 1;
+  align-self: center;
+  overflow: hidden;
+  border: 1px solid #2a2f45;
+  border-radius: 10px;
+  background: #000;
+}
+
+.timelapse-stage img,
+.timelapse-stage canvas,
+.timelapse-stage svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.timelapse-stage img,
+.timelapse-stage canvas {
+  image-rendering: pixelated;
+}
+
+.timelapse-marker {
+  fill: none;
+  stroke: #f6ad55;
+  stroke-width: 0.012;
+}
+
+.timelapse-trail {
+  fill: none;
+  stroke: rgba(246, 173, 85, 0.55);
+  stroke-width: 0.006;
+  stroke-dasharray: 0.02 0.015;
+}
+
+.timelapse-center {
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 0.006;
+}
+
+.timelapse-compass,
+.timelapse-badge {
+  position: absolute;
+  margin: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.68rem;
+}
+
+.timelapse-compass {
+  right: 6px;
+  bottom: 6px;
+}
+
+.timelapse-badge {
+  top: 6px;
+  left: 6px;
+}
+
+.timelapse-message {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.timelapse-message p {
+  margin: 0;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #343a58;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.timelapse-transport {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.timelapse-transport button {
+  min-width: 44px;
+}
+
+.segmented {
+  display: flex;
+  gap: 4px;
+}
+
+.segmented button {
+  flex: 1;
+  padding: 7px 4px;
+  border-color: #343a58;
+  background: #15182a;
+  font-size: 0.78rem;
+}
+
+.segmented button[aria-checked='true'] {
+  border-color: var(--accent);
+  background: #3b2e7b;
+}
+
+.timelapse-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.timelapse-options label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+}
+
+.timelapse-cta {
+  width: 100%;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (min-width: 600px) {
+  .timelapse {
+    left: auto;
+    width: min(380px, calc(100vw - 380px));
+    min-width: 300px;
+  }
+
+  .timelapse-stage {
+    width: 100%;
+  }
+}

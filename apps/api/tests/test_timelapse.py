@@ -13,7 +13,7 @@ from PIL import Image
 from skylens_api.config import get_settings
 from skylens_api.main import create_app
 from skylens_api.models import Observation
-from skylens_api.timelapse import coadd_fits, group_epochs, render_png, select_epoch_images
+from skylens_api.timelapse import coadd_fits, fill_holes, group_epochs, render_png, select_epoch_images
 
 RA = 133.795129
 DEC = -7.245147
@@ -203,3 +203,13 @@ def test_persistent_cutout_failure_becomes_502(tmp_path: Path, monkeypatch: pyte
         assert route.call_count == 1
     finally:
         get_settings.cache_clear()
+
+
+def test_fill_holes_paints_saturated_cores_but_keeps_coverage_gaps() -> None:
+    data = np.full((5, 5), 1.0)
+    data[2, 2] = np.nan
+    data[1, 2] = 9.0
+    data[:, 0] = np.nan
+    filled = fill_holes(data)
+    assert filled[2, 2] == 9.0
+    assert np.isnan(filled[:, 0]).all()

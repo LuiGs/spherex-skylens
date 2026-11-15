@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     http_retries: int = 3
     http_retry_backoff_s: float = 0.5
     cors_origins: list[str] = ["*"]
+    # Matches per-PR preview hosts of Azure Static Web Apps, e.g. https://<app>-12.eastus2.8.azurestaticapps.net
+    cors_origin_regex: str | None = None
     timelapse_epoch_gap_days: float = 30.0
     timelapse_max_images_per_epoch: int = 12
     timelapse_max_concurrency: int = 4
