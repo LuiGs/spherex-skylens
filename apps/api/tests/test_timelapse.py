@@ -167,7 +167,7 @@ def test_timelapse_metadata_frame_and_cached_compact_cutout(tmp_path: Path, monk
 
             cached = next(tmp_path.glob("*.fits"))
             with fits.open(cached) as hdus:
-                assert {hdu.name for hdu in hdus} == {"PRIMARY", "IMAGE", "FLAGS", "VARIANCE", "ZODI"}
+                assert {hdu.name for hdu in hdus} == {"PRIMARY", "IMAGE", "FLAGS", "VARIANCE", "ZODI", "WCS-WAVE"}
 
             missing = client.get(
                 "/api/v1/timelapse/frame",

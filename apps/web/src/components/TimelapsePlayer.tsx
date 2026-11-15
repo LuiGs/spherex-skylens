@@ -3,6 +3,7 @@ import type { Target } from '../data/targets';
 import { useTimelapse } from '../hooks/useTimelapse';
 import { predictPosition, type Equatorial } from '../lib/astro';
 import { formatEpochRange } from '../lib/epochs';
+import { useI18n } from '../lib/i18n';
 import { differencePixels, nextFrame, skyToFrame, TIMELAPSE_SIZES, type TimelapseMode } from '../lib/timelapse';
 
 interface Props {
@@ -15,11 +16,7 @@ interface Props {
   onClose: () => void;
 }
 
-const MODES: { key: TimelapseMode; label: string; hint: string }[] = [
-  { key: 'play', label: 'Animación', hint: 'Recorre todas las épocas en orden.' },
-  { key: 'blink', label: 'Parpadeo', hint: 'Alterna la primera y la última época, como WiseView.' },
-  { key: 'diff', label: 'Resta', hint: 'Última menos primera: lo que se movió aparece como un par claro/oscuro.' },
-];
+const MODE_KEYS: TimelapseMode[] = ['play', 'blink', 'diff'];
 const SPEEDS = [0.5, 1, 2, 4];
 
 function isTyping(target: EventTarget | null): boolean {
@@ -29,6 +26,8 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetectorChange, target, onClose }: Props) {
+  const { t } = useI18n();
+  const tl = t.timelapse;
   const { state, retry } = useTimelapse(center.ra, center.dec, size, detector);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -108,15 +107,15 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
   const visibleMarkers = mode === 'diff' ? [blinkPair[0], blinkPair[1]] : [shown];
 
   return (
-    <section className="timelapse" aria-label="Timelapse SPHEREx">
+    <section className="timelapse" aria-label={tl.title}>
       <header className="timelapse-header">
         <div>
-          <h2>Timelapse SPHEREx</h2>
+          <h2>{tl.title}</h2>
           <p>
-            {sizeInfo.label} · {Math.round(size * 3600)}″ de lado · RA {center.ra.toFixed(4)}° Dec {center.dec.toFixed(4)}°
+            {tl.sizes[size] ?? sizeInfo.label} · {Math.round(size * 3600)}″ {tl.side} · RA {center.ra.toFixed(4)}° Dec {center.dec.toFixed(4)}°
           </p>
         </div>
-        <button type="button" className="icon-button" onClick={onClose} aria-label="Cerrar timelapse">
+        <button type="button" className="icon-button" onClick={onClose} aria-label={tl.close}>
           ✕
         </button>
       </header>
@@ -126,35 +125,37 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
           <div className="timelapse-message" aria-live="polite" aria-busy="true">
             <div className="spinner" aria-hidden="true" />
             <p>
-              Combinando las imágenes de SPHEREx de cada época… {elapsed} s
+              {tl.loading(elapsed)}
               <br />
-              <small>La primera vez tarda unos {sizeInfo.seconds} s; después queda en caché.</small>
+              <small>{tl.loadingHint(sizeInfo.seconds)}</small>
             </p>
           </div>
         )}
         {state.status === 'empty' && (
           <div className="timelapse-message">
-            <p>SPHEREx todavía no tiene imágenes de esta zona. Probá con uno de los objetivos del challenge.</p>
+            <p>{tl.empty}</p>
           </div>
         )}
         {state.status === 'error' && (
           <div className="timelapse-message">
             <p>
               {state.error.kind === 'busy'
-                ? 'IRSA (el archivo de la NASA) está ocupado. Probá de nuevo en unos segundos.'
-                : state.error.message}
+                ? t.errors.busy
+                : state.error.status
+                  ? t.errors.http(state.error.status)
+                  : t.errors.network}
             </p>
             <button type="button" onClick={retry}>
-              Reintentar
+              {t.errors.retry}
             </button>
           </div>
         )}
         {state.status === 'ready' && (
           <>
             {mode === 'diff' ? (
-              <canvas ref={canvas} width={state.data.width} height={state.data.height} aria-label="Resta de épocas" />
+              <canvas ref={canvas} width={state.data.width} height={state.data.height} aria-label={tl.modes.diff.label} />
             ) : (
-              <img src={state.frames[shown].src} alt={`Época ${shown + 1} de ${count}`} />
+              <img src={state.frames[shown].src} alt={tl.epochOf(shown + 1, count)} />
             )}
             <svg viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
               {markers.length > 1 && (
@@ -168,10 +169,10 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
               <path d="M0.5 0.44V0.47M0.5 0.53V0.56M0.44 0.5H0.47M0.53 0.5H0.56" className="timelapse-center" />
             </svg>
             {diffError && mode === 'diff' && (
-              <p className="timelapse-badge error">No se pudo calcular la resta en este navegador.</p>
+              <p className="timelapse-badge error">{tl.diffError}</p>
             )}
             <span className="timelapse-compass" aria-hidden="true">
-              N↑ E←
+              {tl.compass}
             </span>
           </>
         )}
@@ -180,9 +181,9 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
       {epoch && (
         <p className="timelapse-caption" aria-live="polite">
           <strong>
-            {mode === 'diff' ? 'Última − primera' : `Época ${shown + 1} de ${count}`}
+            {mode === 'diff' ? tl.lastMinusFirst : tl.epochOf(shown + 1, count)}
           </strong>{' '}
-          · {formatEpochRange(epoch.mjd_start, epoch.mjd_end)} · {epoch.n_images} imágenes (
+          · {formatEpochRange(epoch.mjd_start, epoch.mjd_end, t.locale)} · {tl.images(epoch.n_images)} (
           {epoch.detectors.map((d) => `D${d}`).join(' ')})
         </p>
       )}
@@ -194,7 +195,7 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
               type="button"
               onClick={() => setPlaying((value) => !value)}
               disabled={mode === 'diff' || count < 2}
-              aria-label={playing ? 'Pausar' : 'Reproducir'}
+              aria-label={playing ? tl.pause : tl.play}
             >
               {playing ? '❚❚' : '▶'}
             </button>
@@ -204,13 +205,13 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
               max={Math.max(0, count - 1)}
               value={shown}
               disabled={mode !== 'play'}
-              aria-label="Época"
+              aria-label={tl.epoch}
               onChange={(e) => {
                 setPlaying(false);
                 setIndex(Number(e.target.value));
               }}
             />
-            <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))} aria-label="Velocidad">
+            <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))} aria-label={tl.speed}>
               {SPEEDS.map((value) => (
                 <option key={value} value={value}>
                   {value}×
@@ -218,8 +219,10 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
               ))}
             </select>
           </div>
-          <div className="segmented" role="radiogroup" aria-label="Modo">
-            {MODES.map((option) => (
+          <div className="segmented" role="radiogroup" aria-label={tl.modeLabel}>
+            {MODE_KEYS.map((key) => (
+              ({ key, ...tl.modes[key] })
+            )).map((option) => (
               <button
                 key={option.key}
                 type="button"
@@ -236,28 +239,28 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
               </button>
             ))}
           </div>
-          <p className="timelapse-hint">{MODES.find((option) => option.key === mode)?.hint}</p>
+          <p className="timelapse-hint">{tl.modes[mode].hint}</p>
         </>
       )}
 
       <div className="timelapse-options">
         <label>
-          Recorte
+          {tl.cutout}
           <select value={size} onChange={(e) => onSizeChange(Number(e.target.value))}>
             {TIMELAPSE_SIZES.map((option) => (
               <option key={option.deg} value={option.deg}>
-                {option.label} ({Math.round(option.deg * 3600)}″, ~{option.seconds} s)
+                {tl.sizes[option.deg] ?? option.label} ({Math.round(option.deg * 3600)}″, ~{option.seconds} s)
               </option>
             ))}
           </select>
         </label>
         <label>
-          Detector
+          {tl.detector}
           <select
             value={detector ?? ''}
             onChange={(e) => onDetectorChange(e.target.value ? Number(e.target.value) : null)}
           >
-            <option value="">Todos (D1–D6)</option>
+            <option value="">{tl.allDetectors}</option>
             {[1, 2, 3, 4, 5, 6].map((d) => (
               <option key={d} value={d}>
                 D{d}
@@ -267,8 +270,8 @@ export function TimelapsePlayer({ center, size, onSizeChange, detector, onDetect
         </label>
       </div>
       <p className="timelapse-hint">
-        Las estrellas lejanas quedan quietas entre épocas: si algo cambia de lugar, se está moviendo.
-        {target && ` El círculo naranja marca dónde debería estar ${target.name} en cada época.`}
+        {tl.hint}
+        {target && tl.markerHint(target.name)}
       </p>
     </section>
   );

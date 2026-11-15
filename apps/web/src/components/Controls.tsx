@@ -1,9 +1,11 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { CHALLENGE_TARGETS, type Target } from '../data/targets';
 import type { ObservationsState } from '../hooks/useObservations';
-import { dateToMjd, parseDec, parseRa, predictPosition, type Equatorial } from '../lib/astro';
+import { dateToMjd, predictPosition, type Equatorial } from '../lib/astro';
 import { formatEpochSummary, type Epoch } from '../lib/epochs';
 import { approxWavelength, frameToBandChannel, SPHEREX_CUBE_DEPTH } from '../lib/spherex';
+import { useI18n } from '../lib/i18n';
+import { resolveSearch } from '../lib/resolver';
 import type { ViewState } from '../lib/urlState';
 import { ObservationsPanel } from './ObservationsPanel';
 
@@ -24,6 +26,8 @@ interface Props {
   onClearTarget: () => void;
   onOpenTimelapse: () => void;
   timelapseOpen: boolean;
+  onShowHelp: () => void;
+  onOpenSpectrum: () => void;
 }
 
 const TABS = [
@@ -50,22 +54,25 @@ export function Controls({
   onClearTarget,
   onOpenTimelapse,
   timelapseOpen,
+  onShowHelp,
+  onOpenSpectrum,
 }: Props) {
-  const [raInput, setRaInput] = useState('');
-  const [decInput, setDecInput] = useState('');
+  const { t, lang, setLang } = useI18n();
+  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
   const { band, channel } = frameToBandChannel(view.frame);
   const observationCount = observationsState.status === 'ready' ? observationsState.data.count : 0;
   const summary =
     observationsState.status === 'ready'
-      ? formatEpochSummary(observationsState.epochs)
+      ? formatEpochSummary(observationsState.epochs, t.locale, t.observations.epochs)
       : observationsState.status === 'idle' || observationsState.status === 'loading'
-        ? 'Buscando observaciones…'
+        ? t.summary.loading
         : observationsState.status === 'empty'
-          ? 'Sin observaciones'
+          ? t.summary.empty
           : observationsState.status === 'error'
-            ? 'Observaciones no disponibles'
+            ? t.summary.error
             : '';
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, current: MobileTab) => {
@@ -82,16 +89,21 @@ export function Controls({
     window.requestAnimationFrame(() => document.getElementById(`tab-${nextTab.key}`)?.focus());
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const ra = parseRa(raInput);
-    const dec = parseDec(decInput);
-    if (ra === null || dec === null) {
-      setError('Formato inválido. Ej: 08h55m10.831s / -7d14m42.53s o grados decimales.');
-      return;
-    }
+    if (!query.trim()) return;
+    setSearching(true);
     setError(null);
-    onChange({ ra, dec, target: null });
+    try {
+      const result = await resolveSearch(query);
+      if (!result) setError(t.search.notFound(query.trim()));
+      else if (result.kind === 'target') goToTarget(result.target.id);
+      else onChange({ ...result.position, target: null });
+    } catch {
+      setError(t.search.resolverDown);
+    } finally {
+      setSearching(false);
+    }
   };
 
   const goToTarget = (id: string) => {
@@ -102,8 +114,24 @@ export function Controls({
 
   return (
     <aside className={`controls${mobileTab ? ' mobile-expanded' : ''}`} data-mobile-tab={mobileTab ?? 'collapsed'}>
-      <h1 className="controls-title">SPHEREx SkyLens</h1>
-      <div className="mobile-tabs" role="tablist" aria-label="Controles del mapa">
+      <div className="controls-heading">
+        <h1 className="controls-title">SPHEREx SkyLens</h1>
+        <div className="heading-actions">
+          <button
+            type="button"
+            className="icon-button lang-button"
+            onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
+            aria-label={t.switchTo}
+            title={t.switchTo}
+          >
+            {lang === 'es' ? 'EN' : 'ES'}
+          </button>
+          <button type="button" className="icon-button help-button" onClick={onShowHelp} aria-label={t.help}>
+            ?
+          </button>
+        </div>
+      </div>
+      <div className="mobile-tabs" role="tablist" aria-label={t.tabs.label}>
         {TABS.map((tab, index) => (
           <button
             id={`tab-${tab.key}`}
@@ -116,7 +144,7 @@ export function Controls({
             onClick={() => setMobileTab((current) => (current === tab.key ? null : tab.key))}
             onKeyDown={(event) => handleTabKeyDown(event, tab.key)}
           >
-            {tab.key === 'observations' ? `${tab.label} · ${observationCount}` : tab.label}
+            {tab.key === 'observations' ? `${t.tabs[tab.key]} · ${observationCount}` : t.tabs[tab.key]}
           </button>
         ))}
       </div>
@@ -132,28 +160,26 @@ export function Controls({
         role="tabpanel"
         aria-labelledby="tab-search"
       >
-        <form onSubmit={submit} className="coords">
+        <form onSubmit={submit} className="coords" role="search">
           <input
-            aria-label="Ascensión recta"
-            placeholder="RA (08h55m10.8s)"
-            value={raInput}
-            onChange={(e) => setRaInput(e.target.value)}
+            type="search"
+            aria-label={t.search.label}
+            placeholder="M31, Barnard, 08h55m10s -7d14m42s"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            enterKeyHint="search"
           />
-          <input
-            aria-label="Declinación"
-            placeholder="Dec (-7d14m42s)"
-            value={decInput}
-            onChange={(e) => setDecInput(e.target.value)}
-          />
-          <button type="submit">Ir</button>
+          <button type="submit" disabled={searching}>
+            {searching ? '…' : t.search.go}
+          </button>
         </form>
         {error && <p className="error">{error}</p>}
 
         <label>
-          Objetivos del challenge
+          {t.targets.label}
           <select value={view.target ?? ''} onChange={(e) => goToTarget(e.target.value)}>
             <option value="" disabled>
-              Elegí un objeto…
+              {t.targets.placeholder}
             </option>
             {CHALLENGE_TARGETS.map((t) => (
               <option key={t.id} value={t.id}>
@@ -166,16 +192,19 @@ export function Controls({
         {target && targetPosition ? (
           <>
             <p className="readout target-readout">
-              Posición esperada · {target.name} · {targetDate}: RA {targetPosition.ra.toFixed(6)}° Dec{' '}
+              {t.expected} · {target.name} · {targetDate}: RA {targetPosition.ra.toFixed(6)}° Dec{' '}
               {targetPosition.dec.toFixed(6)}°
             </p>
             <p className="readout target-source">{target.source}</p>
             <div className="toggles">
               <button type="button" onClick={onOpenTimelapse} disabled={timelapseOpen}>
-                ▶ Ver si se mueve
+                {t.moves}
+              </button>
+              <button type="button" onClick={onOpenSpectrum}>
+                {t.spectrum}
               </button>
               <button type="button" className="remove-marker" onClick={onClearTarget}>
-                Quitar marcador
+                {t.clearMarker}
               </button>
             </div>
           </>
@@ -184,11 +213,18 @@ export function Controls({
             RA {view.ra.toFixed(5)}° · Dec {view.dec.toFixed(5)}° · FoV {view.fov.toFixed(3)}°
           </p>
         )}
+        <p className="readout keyboard-hint">
+          <kbd>W</kbd>
+          <kbd>A</kbd>
+          <kbd>S</kbd>
+          <kbd>D</kbd> {t.keys.move} · <kbd>+</kbd>
+          <kbd>−</kbd> {t.keys.zoom}
+        </p>
       </section>
 
       <section id="controls-layers" className="control-section layers-section" role="tabpanel" aria-labelledby="tab-layers">
         <label>
-          Banda D{band} · canal {channel} · ~{approxWavelength(view.frame).toFixed(2)} µm
+          {t.band(band, channel, approxWavelength(view.frame).toFixed(2))}
           <input
             type="range"
             min={0}
@@ -199,15 +235,18 @@ export function Controls({
         </label>
 
         <div className="toggles">
+          <button type="button" onClick={onOpenSpectrum}>
+            {t.spectrumHere}
+          </button>
           <button type="button" onClick={onToggleGaia} aria-pressed={showGaia}>
-            {showGaia ? 'Ocultar' : 'Mostrar'} Gaia DR3
+            {t.gaia(showGaia)}
           </button>
           <button type="button" onClick={onTogglePointing} aria-pressed={pointingStatus === 'active'}>
-            {pointingStatus === 'active' ? 'Detener modo AR' : 'Modo AR: apuntar con el celular'}
+            {t.ar(pointingStatus === 'active')}
           </button>
         </div>
         {(pointingStatus === 'denied' || pointingStatus === 'unsupported') && (
-          <p className="error">Sensores no disponibles ({pointingStatus}). Usá HTTPS y permití ubicación/orientación.</p>
+          <p className="error">{t.sensors(pointingStatus)}</p>
         )}
       </section>
 
