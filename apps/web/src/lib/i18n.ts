@@ -26,6 +26,10 @@ const es = {
   keys: { move: 'o flechas para moverte', zoom: 'zoom', or: 'o' },
   band: (band: number, channel: number, um: string) => `Banda D${band} · canal ${channel} · ~${um} µm`,
   gaia: (shown: boolean) => `${shown ? 'Ocultar' : 'Mostrar'} Gaia DR3`,
+  wise: (shown: boolean): string => `${shown ? 'Ocultar' : 'Comparar con'} WISE`,
+  wiseOpacity: (percent: number) => `Opacidad de WISE · ${percent}%`,
+  wiseHint:
+    'AllWISE (NASA, 2010–2011; 3.4, 4.6 y 22 µm) encima de SPHEREx. Algo que está en una imagen y no en la otra pudo moverse o cambiar de brillo en estos ~15 años.',
   ar: (active: boolean): string => (active ? 'Detener modo AR' : 'Modo AR: apuntar con el celular'),
   sensors: (status: string) => `Sensores no disponibles (${status}). Usá HTTPS y permití ubicación/orientación.`,
   errors: {
@@ -138,6 +142,10 @@ const en: Messages = {
   keys: { move: 'or arrows to move', zoom: 'zoom', or: 'or' },
   band: (band: number, channel: number, um: string) => `Band D${band} · channel ${channel} · ~${um} µm`,
   gaia: (shown: boolean) => `${shown ? 'Hide' : 'Show'} Gaia DR3`,
+  wise: (shown: boolean) => `${shown ? 'Hide' : 'Compare with'} WISE`,
+  wiseOpacity: (percent: number) => `WISE opacity · ${percent}%`,
+  wiseHint:
+    'AllWISE (NASA, 2010–2011; 3.4, 4.6 and 22 µm) on top of SPHEREx. Something present in one image but not the other may have moved or changed brightness over these ~15 years.',
   ar: (active: boolean) => (active ? 'Stop AR mode' : 'AR mode: point your phone'),
   sensors: (status: string) => `Sensors unavailable (${status}). Use HTTPS and allow location/orientation.`,
   errors: {

@@ -3,7 +3,7 @@ import { DEFAULT_VIEW, readViewState, writeViewState } from './urlState';
 
 describe('url state', () => {
   it('round-trips', () => {
-    const s = { ra: 10.5, dec: -20.25, fov: 0.5, frame: 12, target: null, timelapse: null, detector: null };
+    const s = { ra: 10.5, dec: -20.25, fov: 0.5, frame: 12, target: null, timelapse: null, detector: null, wise: 0.5 };
     expect(readViewState(writeViewState(s))).toEqual(s);
   });
 
@@ -17,6 +17,9 @@ describe('url state', () => {
     const state = { ...DEFAULT_VIEW, timelapse: 0.06, detector: 4 };
     expect(readViewState(writeViewState(state))).toEqual(state);
     expect(readViewState('?tl=0.5&det=9')).toMatchObject({ timelapse: null, detector: null });
+    expect(readViewState('?wise=7').wise).toBe(1);
+    expect(readViewState('?wise=-1').wise).toBe(0);
+    expect(writeViewState({ ...readViewState(''), wise: 0 })).not.toContain('wise');
   });
 
   it('falls back to defaults on invalid values', () => {
