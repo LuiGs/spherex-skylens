@@ -1,9 +1,10 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { CHALLENGE_TARGETS, type Target } from '../data/targets';
 import type { ObservationsState } from '../hooks/useObservations';
-import { dateToMjd, parseDec, parseRa, predictPosition, type Equatorial } from '../lib/astro';
+import { dateToMjd, predictPosition, type Equatorial } from '../lib/astro';
 import { formatEpochSummary, type Epoch } from '../lib/epochs';
 import { approxWavelength, frameToBandChannel, SPHEREX_CUBE_DEPTH } from '../lib/spherex';
+import { resolveSearch } from '../lib/resolver';
 import type { ViewState } from '../lib/urlState';
 import { ObservationsPanel } from './ObservationsPanel';
 
@@ -24,6 +25,7 @@ interface Props {
   onClearTarget: () => void;
   onOpenTimelapse: () => void;
   timelapseOpen: boolean;
+  onShowHelp: () => void;
 }
 
 const TABS = [
@@ -50,9 +52,10 @@ export function Controls({
   onClearTarget,
   onOpenTimelapse,
   timelapseOpen,
+  onShowHelp,
 }: Props) {
-  const [raInput, setRaInput] = useState('');
-  const [decInput, setDecInput] = useState('');
+  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
   const { band, channel } = frameToBandChannel(view.frame);
@@ -82,16 +85,21 @@ export function Controls({
     window.requestAnimationFrame(() => document.getElementById(`tab-${nextTab.key}`)?.focus());
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const ra = parseRa(raInput);
-    const dec = parseDec(decInput);
-    if (ra === null || dec === null) {
-      setError('Formato inválido. Ej: 08h55m10.831s / -7d14m42.53s o grados decimales.');
-      return;
-    }
+    if (!query.trim()) return;
+    setSearching(true);
     setError(null);
-    onChange({ ra, dec, target: null });
+    try {
+      const result = await resolveSearch(query);
+      if (!result) setError(`No encontré “${query.trim()}”. Probá con otro nombre o con coordenadas RA Dec.`);
+      else if (result.kind === 'target') goToTarget(result.target.id);
+      else onChange({ ...result.position, target: null });
+    } catch {
+      setError('No se pudo consultar el buscador de nombres (CDS). Probá con coordenadas RA Dec.');
+    } finally {
+      setSearching(false);
+    }
   };
 
   const goToTarget = (id: string) => {
@@ -102,7 +110,12 @@ export function Controls({
 
   return (
     <aside className={`controls${mobileTab ? ' mobile-expanded' : ''}`} data-mobile-tab={mobileTab ?? 'collapsed'}>
-      <h1 className="controls-title">SPHEREx SkyLens</h1>
+      <div className="controls-heading">
+        <h1 className="controls-title">SPHEREx SkyLens</h1>
+        <button type="button" className="icon-button help-button" onClick={onShowHelp} aria-label="Cómo se usa">
+          ?
+        </button>
+      </div>
       <div className="mobile-tabs" role="tablist" aria-label="Controles del mapa">
         {TABS.map((tab, index) => (
           <button
@@ -132,20 +145,18 @@ export function Controls({
         role="tabpanel"
         aria-labelledby="tab-search"
       >
-        <form onSubmit={submit} className="coords">
+        <form onSubmit={submit} className="coords" role="search">
           <input
-            aria-label="Ascensión recta"
-            placeholder="RA (08h55m10.8s)"
-            value={raInput}
-            onChange={(e) => setRaInput(e.target.value)}
+            type="search"
+            aria-label="Buscar un objeto por nombre o coordenadas"
+            placeholder="M31, Barnard, 08h55m10s -7d14m42s"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            enterKeyHint="search"
           />
-          <input
-            aria-label="Declinación"
-            placeholder="Dec (-7d14m42s)"
-            value={decInput}
-            onChange={(e) => setDecInput(e.target.value)}
-          />
-          <button type="submit">Ir</button>
+          <button type="submit" disabled={searching}>
+            {searching ? '…' : 'Ir'}
+          </button>
         </form>
         {error && <p className="error">{error}</p>}
 
@@ -184,6 +195,13 @@ export function Controls({
             RA {view.ra.toFixed(5)}° · Dec {view.dec.toFixed(5)}° · FoV {view.fov.toFixed(3)}°
           </p>
         )}
+        <p className="readout keyboard-hint">
+          <kbd>W</kbd>
+          <kbd>A</kbd>
+          <kbd>S</kbd>
+          <kbd>D</kbd> o flechas para moverte · <kbd>+</kbd>
+          <kbd>−</kbd> zoom
+        </p>
       </section>
 
       <section id="controls-layers" className="control-section layers-section" role="tabpanel" aria-labelledby="tab-layers">

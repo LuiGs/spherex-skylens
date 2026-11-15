@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controls } from './components/Controls';
+import { Onboarding } from './components/Onboarding';
 import { SkyView } from './components/SkyView';
 import { TimelapsePlayer } from './components/TimelapsePlayer';
 import { CHALLENGE_TARGETS } from './data/targets';
+import { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
 import { useObservations } from './hooks/useObservations';
 import { useSkyPointing } from './hooks/useSkyPointing';
 import { dateToMjd, predictPosition } from './lib/astro';
 import { mjdToDate, type Epoch } from './lib/epochs';
+import { hasSeenOnboarding } from './lib/onboarding';
 import { defaultTimelapseSize } from './lib/timelapse';
 import { readViewState, writeViewState, type ViewState } from './lib/urlState';
 
@@ -14,6 +17,7 @@ export default function App() {
   const [view, setView] = useState<ViewState>(() => readViewState(window.location.search));
   const [showGaia, setShowGaia] = useState(false);
   const [selectedEpoch, setSelectedEpoch] = useState<Epoch | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
   const { state: observationsState, retry } = useObservations(view.ra, view.dec, view.fov);
 
   // The timelapse is centred where it was opened, so panning the sky does not refetch it.
@@ -29,6 +33,7 @@ export default function App() {
   }, [view.ra, view.dec]);
   const closeTimelapse = useCallback(() => setView((v) => ({ ...v, timelapse: null })), []);
   const pointing = useSkyPointing(update);
+  useKeyboardNavigation(view, update, { allowArrows: view.timelapse === null, enabled: !showOnboarding });
   const target = CHALLENGE_TARGETS.find((candidate) => candidate.id === view.target) ?? null;
   const markerMjd = useMemo(() => {
     if (selectedEpoch) return (selectedEpoch.mjdStart + selectedEpoch.mjdEnd) / 2;
@@ -76,6 +81,7 @@ export default function App() {
         onClearTarget={() => update({ target: null })}
         onOpenTimelapse={openTimelapse}
         timelapseOpen={view.timelapse !== null}
+        onShowHelp={() => setShowOnboarding(true)}
       />
       {view.timelapse !== null && (
         <TimelapsePlayer
@@ -88,6 +94,7 @@ export default function App() {
           onClose={closeTimelapse}
         />
       )}
+      {showOnboarding && <Onboarding onClose={() => setShowOnboarding(false)} />}
     </main>
   );
 }
