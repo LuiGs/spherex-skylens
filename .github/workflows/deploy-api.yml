@@ -6,6 +6,11 @@ on:
     paths: ["apps/api/**", ".github/workflows/deploy-api.yml"]
   workflow_dispatch:
 
+# Azure rejects a deploy while another one is still provisioning, so queue them.
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
