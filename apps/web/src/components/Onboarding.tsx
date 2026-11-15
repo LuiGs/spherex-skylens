@@ -4,7 +4,7 @@ import { markOnboardingSeen } from '../lib/onboarding';
 
 
 export function Onboarding({ onClose }: { onClose: () => void }) {
-  const { t } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const STEPS = t.onboarding.steps;
   const [step, setStep] = useState(0);
   const primary = useRef<HTMLButtonElement>(null);
@@ -20,9 +20,20 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
   return (
     <div className="onboarding-backdrop" role="presentation" onKeyDown={(e) => e.key === 'Escape' && finish()}>
       <div className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
-        <p className="onboarding-step">
-          {step + 1} / {STEPS.length}
-        </p>
+        <div className="onboarding-head">
+          <p className="onboarding-step">
+            {step + 1} / {STEPS.length}
+          </p>
+          <button
+            type="button"
+            className="icon-button lang-button"
+            onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
+            aria-label={t.switchTo}
+            title={t.switchTo}
+          >
+            {lang === 'es' ? 'EN' : 'ES'}
+          </button>
+        </div>
         <h2 id="onboarding-title">{STEPS[step].title}</h2>
         <p>{STEPS[step].body}</p>
         <div className="onboarding-dots" aria-hidden="true">
