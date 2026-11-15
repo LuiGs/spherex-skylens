@@ -5,6 +5,7 @@ import { createNavigationGrid } from '../lib/navigationGrid';
 import { attachSkyDrag } from '../lib/skyDrag';
 import { MAX_FOV, MIN_FOV } from '../lib/projection';
 import { spectralSurveyUrl, SPECTRAL_HIPS_OPTIONS, WISE_HIPS_URL } from '../lib/spherex';
+import { GAIA_VIZIER_MIRRORS, gaiaConeUrl, motionArrows } from '../lib/gaia';
 import type { ViewState } from '../lib/urlState';
 import { useI18n } from '../lib/i18n';
 
@@ -14,16 +15,21 @@ interface Props {
   onViewChange: (patch: Partial<ViewState>) => void;
   targetPosition: Equatorial | null;
   timelapseBox: (Equatorial & { size: number }) | null;
+  /** Reports the time span and number of Gaia motion arrows drawn, or null when hidden. */
+  onGaiaMotion?: (motion: { years: number; count: number } | null) => void;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- aladin-lite ships without types */
-export function SkyView({ view, showGaia, onViewChange, targetPosition, timelapseBox }: Props) {
+export function SkyView({ view, showGaia, onViewChange, targetPosition, timelapseBox, onGaiaMotion }: Props) {
   const { t } = useI18n();
   const surveyUrl = spectralSurveyUrl(view);
   const isComposite = view.spectralMode === 'color';
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<any>(null);
   const gaia = useRef<any>(null);
+  const gaiaArrows = useRef<any>(null);
+  const onMotion = useRef(onGaiaMotion);
+  onMotion.current = onGaiaMotion;
   const wise = useRef<any>(null);
   const markerOverlay = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -53,6 +59,9 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
         showCooGrid: false,
         gridOpacity: 0,
         gridOptions: { enabled: false, color: '#8bbcff', opacity: 0, thickness: 1, labelSize: 12, showLabels: true },
+        showCooLocation: false,
+        reticleColor: '#f2a35b',
+        showFov: false,
         showProjectionControl: false,
         showFrame: false,
         showLayersControl: false,
@@ -247,10 +256,73 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
     const instance = aladin.current;
     if (!instance) return;
     const clear = () => {
+      if (gaiaArrows.current) instance.removeOverlay(gaiaArrows.current);
+      gaiaArrows.current = null;
       if (!gaia.current) return;
       instance.removeLayer?.(gaia.current);
       gaia.current = null;
       gaiaQuery.current = null;
+      onMotion.current?.(null);
+    };
+    const drawMotion = (catalog: any, fov: number) => {
+      const stars = (catalog.getSources?.() ?? []).map((s: any) => ({
+        ra: s.ra,
+        dec: s.dec,
+        pmRA: Number(s.data?.pmRA),
+        pmDE: Number(s.data?.pmDE),
+      }));
+      const { years, arrows } = motionArrows(stars, fov);
+      const style = { color: '#f687b3', lineWidth: 1.5 };
+      const overlay = A.graphicOverlay({ name: 'Gaia DR3 motion', ...style });
+      instance.addOverlay(overlay);
+      for (const { from, to, head } of arrows) {
+        overlay.add(
+          A.polyline(
+            [
+              [from.ra, from.dec],
+              [to.ra, to.dec],
+            ],
+            style,
+          ),
+        );
+        overlay.add(
+          A.polyline(
+            [
+              [head[0].ra, head[0].dec],
+              [to.ra, to.dec],
+              [head[1].ra, head[1].dec],
+            ],
+            style,
+          ),
+        );
+      }
+      gaiaArrows.current = overlay;
+      onMotion.current?.({ years, count: arrows.length });
+    };
+    const load = (ra: number, dec: number, radius: number, fov: number, mirror: number) => {
+      const catalog = A.catalogFromURL(
+        gaiaConeUrl(ra, dec, radius, mirror),
+        { name: 'Gaia DR3', sourceSize: 8, color: '#4fd1c5', onClick: 'showTable' },
+        (loaded: any) => {
+          if (gaia.current !== catalog) return;
+          // A mirror that lost its database answers 200 with an empty table.
+          if (loaded.getSources?.().length === 0 && mirror + 1 < GAIA_VIZIER_MIRRORS.length) {
+            instance.removeLayer?.(catalog);
+            load(ra, dec, radius, fov, mirror + 1);
+            return;
+          }
+          drawMotion(loaded, fov);
+        },
+        () => {
+          if (gaia.current !== catalog) return;
+          instance.removeLayer?.(catalog);
+          if (mirror + 1 < GAIA_VIZIER_MIRRORS.length) load(ra, dec, radius, fov, mirror + 1);
+          else onMotion.current?.(null);
+        },
+        false,
+      );
+      gaia.current = catalog;
+      instance.addCatalog(catalog);
     };
     if (!showGaia) {
       clear();
@@ -261,15 +333,9 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
     // Debounced so a continuous pan issues one VizieR query once the view settles.
     const timer = setTimeout(() => {
       clear();
-      const radius = Math.min(view.fov, 0.5);
-      gaia.current = A.catalogFromVizieR('I/355/gaiadr3', `${view.ra} ${view.dec}`, radius, {
-        name: 'Gaia DR3',
-        sourceSize: 8,
-        color: '#4fd1c5',
-        onClick: 'showTable',
-      });
+      const radius = Math.min(view.fov * 0.6, 0.5);
+      load(view.ra, view.dec, radius, view.fov, 0);
       gaiaQuery.current = { ra: view.ra, dec: view.dec, radius };
-      instance.addCatalog(gaia.current);
     }, 500);
     return () => clearTimeout(timer);
   }, [ready, showGaia, view.ra, view.dec, view.fov]);

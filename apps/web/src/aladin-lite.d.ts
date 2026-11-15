@@ -16,6 +16,13 @@ declare module 'aladin-lite' {
     HiPS: (url: string, options: Record<string, unknown>) => unknown;
     aladin: (element: HTMLElement, options: Record<string, unknown>) => any;
     catalogFromVizieR: (...args: any[]) => any;
+    catalogFromURL: (
+      url: string,
+      options: Record<string, unknown>,
+      onSuccess?: (catalog: any) => void,
+      onError?: (error: unknown) => void,
+      useProxy?: boolean,
+    ) => any;
     graphicOverlay: (options: GraphicOverlayOptions) => GraphicOverlay;
     circle: (ra: number, dec: number, radiusDeg: number, options?: GraphicOverlayOptions) => unknown;
     polyline: (vertices: Array<[number, number]>, options?: GraphicOverlayOptions) => unknown;

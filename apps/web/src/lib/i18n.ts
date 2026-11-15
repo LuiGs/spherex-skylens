@@ -6,18 +6,30 @@ const STORAGE_KEY = 'skylens:lang';
 
 const es = {
   locale: 'es-AR',
-  appDescription: 'Explorá el cielo infrarrojo de SPHEREx (NASA) desde tu celular o PC.',
+  appDescription: 'Mirá el cielo en infrarrojo con las imágenes reales del telescopio SPHEREx de la NASA.',
+  tagline: 'El cielo infrarrojo de la NASA',
   switchTo: 'English',
   help: 'Cómo se usa',
   tabs: { search: 'Buscar', observations: 'Observaciones', layers: 'Capas', label: 'Controles del mapa' },
   summary: { loading: 'Buscando observaciones…', empty: 'Sin observaciones', error: 'Observaciones no disponibles' },
   search: {
     label: 'Buscar un objeto por nombre o coordenadas',
+    placeholder: 'Buscá una estrella, galaxia o coordenadas',
     go: 'Ir',
     notFound: (q: string) => `No encontré “${q}”. Probá con otro nombre o con coordenadas RA Dec.`,
     resolverDown: 'No se pudo consultar el buscador de nombres (CDS). Probá con coordenadas RA Dec.',
   },
-  targets: { label: 'Objetivos del challenge', placeholder: 'Elegí un objeto…' },
+  targets: {
+    label: 'Para empezar',
+    placeholder: 'Elegí un objeto…',
+    blurbs: {
+      barnard: 'La estrella que más rápido cruza el cielo',
+      'eps-indi-b': 'Dos enanas marrones girando juntas',
+      'wise-0855': 'El objeto más frío que conocemos fuera del Sistema Solar',
+      'rw-aur': 'Una estrella recién nacida que cambia de brillo',
+      'r-dra': 'Una gigante roja que late cada 8 meses',
+    } as Record<string, string>,
+  },
   expected: 'Posición esperada',
   moves: '▶ Ver si se mueve',
   spectrum: 'Espectro',
@@ -48,6 +60,10 @@ const es = {
     waiting: 'Esperando imágenes…',
   },
   gaia: (shown: boolean) => `${shown ? 'Ocultar' : 'Mostrar'} Gaia DR3`,
+  gaiaMotion: (years: number, count: number): string =>
+    count === 0
+      ? 'Gaia DR3: ninguna estrella del campo se mueve lo bastante rápido para dibujar flechas.'
+      : `Flechas rosas: dónde estarán ${count} ${count === 1 ? 'estrella' : 'estrellas'} dentro de ${years} años, según el movimiento propio medido por Gaia DR3.`,
   wise: (shown: boolean): string => `${shown ? 'Ocultar' : 'Comparar con'} WISE`,
   wiseOpacity: (percent: number) => `Opacidad de WISE · ${percent}%`,
   wiseHint:
@@ -80,7 +96,7 @@ const es = {
     sizes: { 0.03: 'Chico', 0.06: 'Medio', 0.1: 'Grande' } as Record<number, string>,
     loading: (s: number) => `Combinando las imágenes de SPHEREx de cada época… ${s} s`,
     loadingHint: (s: number) => `La primera vez tarda unos ${s} s; después queda en caché.`,
-    empty: 'SPHEREx todavía no tiene imágenes de esta zona. Probá con uno de los objetivos del challenge.',
+    empty: 'SPHEREx todavía no tiene imágenes de esta zona. Probá con uno de los lugares de “Para empezar”.',
     frameError: 'No se pudo cargar un frame del timelapse.',
     diffError: 'No se pudo calcular la resta en este navegador.',
     modes: {
@@ -130,7 +146,7 @@ const es = {
       },
       {
         title: 'Encontrá lo que se mueve',
-        body: 'Las estrellas lejanas parecen fijas; las enanas marrones cercanas o un posible “Planeta X” cambian de lugar entre las pasadas de SPHEREx. Elegí un objetivo del challenge y tocá “Ver si se mueve” para comparar las épocas.',
+        body: 'Las estrellas lejanas parecen fijas; las enanas marrones cercanas o un posible “Planeta X” cambian de lugar entre las pasadas de SPHEREx. Elegí un lugar de “Para empezar” y tocá “Ver si se mueve” para comparar las épocas.',
       },
     ],
     skip: 'Saltar',
@@ -145,17 +161,29 @@ export type Messages = typeof es;
 const en: Messages = {
   locale: 'en-US',
   appDescription: "Explore NASA SPHEREx's infrared sky from your phone or PC.",
+  tagline: 'NASA’s infrared sky',
   switchTo: 'Español',
   help: 'How it works',
   tabs: { search: 'Search', observations: 'Observations', layers: 'Layers', label: 'Map controls' },
   summary: { loading: 'Looking for observations…', empty: 'No observations', error: 'Observations unavailable' },
   search: {
     label: 'Search an object by name or coordinates',
+    placeholder: 'Search a star, galaxy or coordinates',
     go: 'Go',
     notFound: (q: string) => `Couldn't find “${q}”. Try another name or RA Dec coordinates.`,
     resolverDown: 'The name resolver (CDS) is not responding. Try RA Dec coordinates.',
   },
-  targets: { label: 'Challenge targets', placeholder: 'Pick an object…' },
+  targets: {
+    label: 'Start here',
+    placeholder: 'Pick an object…',
+    blurbs: {
+      barnard: 'The star that races across the sky fastest',
+      'eps-indi-b': 'Two brown dwarfs circling each other',
+      'wise-0855': 'The coldest known object beyond the Solar System',
+      'rw-aur': 'A newborn star that flickers',
+      'r-dra': 'A red giant that pulses every 8 months',
+    },
+  },
   expected: 'Expected position',
   moves: '▶ Does it move?',
   spectrum: 'Spectrum',
@@ -186,6 +214,10 @@ const en: Messages = {
     waiting: 'Waiting for images…',
   },
   gaia: (shown: boolean) => `${shown ? 'Hide' : 'Show'} Gaia DR3`,
+  gaiaMotion: (years: number, count: number): string =>
+    count === 0
+      ? 'Gaia DR3: no star in this field moves fast enough to draw arrows.'
+      : `Pink arrows: where ${count} ${count === 1 ? 'star' : 'stars'} will be in ${years} years, from Gaia DR3 proper motions.`,
   wise: (shown: boolean) => `${shown ? 'Hide' : 'Compare with'} WISE`,
   wiseOpacity: (percent: number) => `WISE opacity · ${percent}%`,
   wiseHint:
@@ -218,7 +250,7 @@ const en: Messages = {
     sizes: { 0.03: 'Small', 0.06: 'Medium', 0.1: 'Large' },
     loading: (s: number) => `Stacking the SPHEREx images of each epoch… ${s} s`,
     loadingHint: (s: number) => `The first time takes about ${s} s; then it is cached.`,
-    empty: 'SPHEREx has no images of this area yet. Try one of the challenge targets.',
+    empty: 'SPHEREx has no images of this area yet. Try one of the “Start here” places.',
     frameError: 'Could not load a timelapse frame.',
     diffError: 'This browser could not compute the difference.',
     modes: {
@@ -268,7 +300,7 @@ const en: Messages = {
       },
       {
         title: 'Find what moves',
-        body: 'Distant stars look fixed; nearby brown dwarfs or a possible “Planet X” change place between SPHEREx passes. Pick a challenge target and tap “Does it move?” to compare the epochs.',
+        body: 'Distant stars look fixed; nearby brown dwarfs or a possible “Planet X” change place between SPHEREx passes. Pick a place from “Start here” and tap “Does it move?” to compare the epochs.',
       },
     ],
     skip: 'Skip',
