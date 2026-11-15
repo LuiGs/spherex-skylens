@@ -185,3 +185,11 @@ export function smoothPointing(previous: Equatorial | null, next: Equatorial, al
   const norm = Math.hypot(x, y, z) || 1;
   return { ra: normalizeDeg(Math.atan2(y, x) / DEG), dec: Math.asin(z / norm) / DEG };
 }
+
+/** Great-circle distance between two sky positions, in degrees. */
+export function angularSeparation(a: Equatorial, b: Equatorial): number {
+  const dRa = (b.ra - a.ra) * DEG;
+  const sinDec = Math.sin(a.dec * DEG) * Math.sin(b.dec * DEG);
+  const cosDec = Math.cos(a.dec * DEG) * Math.cos(b.dec * DEG) * Math.cos(dRa);
+  return Math.acos(Math.min(1, Math.max(-1, sinDec + cosDec))) / DEG;
+}

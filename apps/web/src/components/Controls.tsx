@@ -22,6 +22,7 @@ interface Props {
   smallBodies: SmallBodiesState;
   gaiaMotion: { years: number; count: number } | null;
   pointingStatus: string;
+  onToggleHold: () => void;
   onTogglePointing: () => void;
   observationsState: ObservationsState;
   retry: () => void;
@@ -54,6 +55,7 @@ export function Controls({
   smallBodies,
   gaiaMotion,
   pointingStatus,
+  onToggleHold,
   onTogglePointing,
   observationsState,
   retry,
@@ -69,6 +71,7 @@ export function Controls({
   onOpenSpectrum,
 }: Props) {
   const { t, lang, setLang } = useI18n();
+  const arActive = pointingStatus === 'active' || pointingStatus === 'held';
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -282,10 +285,18 @@ export function Controls({
           <button type="button" onClick={onToggleSolarSystem} aria-pressed={showSolarSystem}>
             {t.solarSystem(showSolarSystem)}
           </button>
-          <button type="button" onClick={onTogglePointing} aria-pressed={pointingStatus === 'active'}>
-            {t.ar(pointingStatus === 'active')}
+          <button type="button" onClick={onTogglePointing} aria-pressed={arActive}>
+            {t.ar(arActive)}
           </button>
         </div>
+        {arActive && (
+          <div className="ar-panel">
+            <button type="button" className="primary" onClick={onToggleHold} aria-pressed={pointingStatus === 'held'}>
+              {t.arHold(pointingStatus === 'held')}
+            </button>
+            <small className="hint">{pointingStatus === 'held' ? t.arHeldHint : t.arHint}</small>
+          </div>
+        )}
         {gaiaMotion && <p className="readout">{t.gaiaMotion(gaiaMotion.years, gaiaMotion.count)}</p>}
         {showSolarSystem && <SmallBodiesReadout state={smallBodies} />}
         {view.wise > 0 && (

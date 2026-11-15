@@ -1,10 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { deviceOrientationToHorizontal, horizontalToEquatorial, smoothPointing, type Equatorial } from '../lib/astro';
+import {
+  angularSeparation,
+  deviceOrientationToHorizontal,
+  horizontalToEquatorial,
+  smoothPointing,
+  type Equatorial,
+} from '../lib/astro';
 
-// Weight of each new sensor reading; lower is steadier but laggier.
-const SMOOTHING = 0.2;
+// Hand tremor is a fraction of a degree; ignore it so the sky does not jitter.
+const DEAD_ZONE_DEG = 0.4;
+// Small movements are damped hard (steady), big sweeps follow almost immediately.
+const MIN_SMOOTHING = 0.06;
+const MAX_SMOOTHING = 0.5;
+const FULL_SPEED_DEG = 15;
 
-type Status = 'idle' | 'requesting' | 'active' | 'unsupported' | 'denied';
+type Status = 'idle' | 'requesting' | 'active' | 'held' | 'unsupported' | 'denied';
+
+function adaptiveSmoothing(distanceDeg: number): number {
+  const t = Math.min(distanceDeg / FULL_SPEED_DEG, 1);
+  return MIN_SMOOTHING + (MAX_SMOOTHING - MIN_SMOOTHING) * t * t;
+}
 
 interface OrientationEventWithCompass extends DeviceOrientationEvent {
   webkitCompassHeading?: number;
@@ -23,16 +38,23 @@ export function useSkyPointing(onPointing: (p: Equatorial) => void) {
   const location = useRef<{ lat: number; lon: number } | null>(null);
   const smoothed = useRef<Equatorial | null>(null);
   const frame = useRef<number | null>(null);
+  const held = useRef(false);
   const callback = useRef(onPointing);
   callback.current = onPointing;
 
   const handle = useCallback((e: OrientationEventWithCompass) => {
-    if (e.beta === null || e.gamma === null || !location.current) return;
+    if (held.current || e.beta === null || e.gamma === null || !location.current) return;
     const alpha = e.webkitCompassHeading !== undefined ? 360 - e.webkitCompassHeading : e.alpha;
     if (alpha === null) return;
     const horizontal = deviceOrientationToHorizontal(alpha, e.beta, e.gamma);
     const pointing = horizontalToEquatorial(horizontal, location.current.lat, location.current.lon, new Date());
-    smoothed.current = smoothPointing(smoothed.current, pointing, SMOOTHING);
+    if (smoothed.current) {
+      const distance = angularSeparation(smoothed.current, pointing);
+      if (distance < DEAD_ZONE_DEG) return;
+      smoothed.current = smoothPointing(smoothed.current, pointing, adaptiveSmoothing(distance));
+    } else {
+      smoothed.current = pointing;
+    }
     // Sensors fire faster than the screen refreshes; push at most one update per frame.
     if (frame.current === null)
       frame.current = window.requestAnimationFrame(() => {
@@ -47,8 +69,16 @@ export function useSkyPointing(onPointing: (p: Equatorial) => void) {
     if (frame.current !== null) window.cancelAnimationFrame(frame.current);
     frame.current = null;
     smoothed.current = null;
+    held.current = false;
     setStatus('idle');
   }, [handle]);
+
+  /** Freeze the view where the phone points now, so the user can zoom in and explore. */
+  const toggleHold = useCallback(() => {
+    held.current = !held.current;
+    if (!held.current) smoothed.current = null;
+    setStatus(held.current ? 'held' : 'active');
+  }, []);
 
   const start = useCallback(async () => {
     if (!('DeviceOrientationEvent' in window) || !navigator.geolocation) {
@@ -78,5 +108,5 @@ export function useSkyPointing(onPointing: (p: Equatorial) => void) {
 
   useEffect(() => stop, [stop]);
 
-  return { status, start, stop };
+  return { status, start, stop, toggleHold };
 }

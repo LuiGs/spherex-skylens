@@ -83,6 +83,10 @@ const es = {
     'AllWISE (NASA, 2010–2011; 3.4, 4.6 y 22 µm) encima de SPHEREx. Algo que está en una imagen y no en la otra pudo moverse o cambiar de brillo en estos ~15 años.',
   ar: (active: boolean): string => (active ? 'Detener modo AR' : 'Modo AR: apuntar con el celular'),
   sensors: (status: string) => `Sensores no disponibles (${status}). Usá HTTPS y permití ubicación/orientación.`,
+  arHold: (held: boolean): string => (held ? 'Seguir al celular' : 'Fijar la vista acá'),
+  arHint:
+    'Movete despacio: ves unos 60° de cielo, como la cámara. Cuando encuentres algo, tocá "Fijar" y hacé zoom con dos dedos.',
+  arHeldHint: 'Vista fija. Explorá con los dedos; tocá "Seguir al celular" para volver a apuntar.',
   errors: {
     busy: 'IRSA (el archivo de la NASA) está ocupado. Probá de nuevo en unos segundos.',
     network: 'No se pudo conectar con la API. Revisá tu conexión e intentá de nuevo.',
@@ -254,6 +258,10 @@ const en: Messages = {
     'AllWISE (NASA, 2010–2011; 3.4, 4.6 and 22 µm) on top of SPHEREx. Something present in one image but not the other may have moved or changed brightness over these ~15 years.',
   ar: (active: boolean) => (active ? 'Stop AR mode' : 'AR mode: point your phone'),
   sensors: (status: string) => `Sensors unavailable (${status}). Use HTTPS and allow location/orientation.`,
+  arHold: (held: boolean) => (held ? 'Follow the phone' : 'Hold the view here'),
+  arHint:
+    'Move slowly: you see about 60° of sky, like the camera does. When you find something, tap "Hold" and pinch to zoom.',
+  arHeldHint: 'View held. Explore with your fingers; tap "Follow the phone" to point again.',
   errors: {
     busy: 'IRSA (the NASA archive) is busy. Try again in a few seconds.',
     network: 'Could not reach the API. Check your connection and try again.',
