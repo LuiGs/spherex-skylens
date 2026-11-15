@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  angularSeparation,
+  angularDistance,
   deviceOrientationToHorizontal,
   horizontalToEquatorial,
   smoothPointing,
@@ -49,7 +49,7 @@ export function useSkyPointing(onPointing: (p: Equatorial) => void) {
     const horizontal = deviceOrientationToHorizontal(alpha, e.beta, e.gamma);
     const pointing = horizontalToEquatorial(horizontal, location.current.lat, location.current.lon, new Date());
     if (smoothed.current) {
-      const distance = angularSeparation(smoothed.current, pointing);
+      const distance = angularDistance(smoothed.current, pointing);
       if (distance < DEAD_ZONE_DEG) return;
       smoothed.current = smoothPointing(smoothed.current, pointing, adaptiveSmoothing(distance));
     } else {
