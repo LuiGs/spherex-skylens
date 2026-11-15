@@ -70,3 +70,23 @@ class SpectrumResponse(BaseModel):
     n_saturated: int = Field(description="Samples dropped because the source saturates the detector")
     n_flagged: int = Field(description="Samples dropped because of other bad-pixel flags")
     points: list[SpectralPoint]
+
+
+class SmallBody(BaseModel):
+    name: str
+    kind: str = Field(description="asteroid | comet")
+    ra: float
+    dec: float
+    vmag: float | None = None
+    ra_rate_arcsec_h: float | None = None
+    dec_rate_arcsec_h: float | None = None
+    dist_arcsec: float | None = None
+
+
+class SmallBodiesResponse(BaseModel):
+    ra: float
+    dec: float
+    size_deg: float
+    mjd: float
+    count: int
+    bodies: list[SmallBody]

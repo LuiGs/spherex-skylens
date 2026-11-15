@@ -23,6 +23,8 @@ declare module 'aladin-lite' {
       useProxy?: boolean,
     ) => any;
     graphicOverlay: (options: GraphicOverlayOptions) => GraphicOverlay;
+    catalog: (options: Record<string, unknown>) => any;
+    source: (ra: number, dec: number, data?: Record<string, unknown>) => any;
     circle: (ra: number, dec: number, radiusDeg: number, options?: GraphicOverlayOptions) => unknown;
     polyline: (vertices: Array<[number, number]>, options?: GraphicOverlayOptions) => unknown;
   }
