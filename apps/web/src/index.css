@@ -652,6 +652,16 @@ button.secondary {
   letter-spacing: 0.08em;
 }
 
+.onboarding-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.onboarding-head .onboarding-step {
+  margin: 0;
+}
+
 .onboarding-dots {
   display: flex;
   gap: 6px;
