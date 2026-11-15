@@ -1094,6 +1094,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "astropy" },
+    { name = "astropy-healpix" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "numpy" },
@@ -1114,6 +1115,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "astropy", specifier = ">=8.0.2" },
+    { name = "astropy-healpix", specifier = ">=2.0.1" },
     { name = "fastapi", specifier = ">=0.162.7" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "numpy", specifier = ">=2.5.4" },

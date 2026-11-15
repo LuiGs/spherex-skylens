@@ -3,7 +3,7 @@ import { CHALLENGE_TARGETS, type Target } from '../data/targets';
 import type { ObservationsState } from '../hooks/useObservations';
 import { dateToMjd, predictPosition, type Equatorial } from '../lib/astro';
 import { formatEpochSummary, type Epoch } from '../lib/epochs';
-import { approxWavelength, frameToBandChannel, SPHEREX_CUBE_DEPTH } from '../lib/spherex';
+import { SpectralControls } from './SpectralControls';
 import { useI18n } from '../lib/i18n';
 import type { SmallBodiesState } from '../hooks/useSmallBodies';
 import { shortName, skyRate } from '../lib/solarSystem';
@@ -73,7 +73,6 @@ export function Controls({
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
-  const { band, channel } = frameToBandChannel(view.frame);
   const observationCount = observationsState.status === 'ready' ? observationsState.data.count : 0;
   const summary =
     observationsState.status === 'ready'
@@ -242,17 +241,29 @@ export function Controls({
       </section>
 
       <section id="controls-layers" className="control-section layers-section" role="tabpanel" aria-labelledby="tab-layers">
-        <label>
-          {t.band(band, channel, approxWavelength(view.frame).toFixed(2))}
-          <input
-            type="range"
-            className="spectrum-slider"
-            min={0}
-            max={SPHEREX_CUBE_DEPTH - 1}
-            value={view.frame}
-            onChange={(e) => onChange({ frame: Number(e.target.value) })}
-          />
-        </label>
+        <fieldset className="projection-control">
+          <legend>{t.projection.title}</legend>
+          <div className="projection-options">
+            <button
+              type="button"
+              aria-pressed={view.projection === 'SIN'}
+              title={t.projection.sinHint}
+              onClick={() => onChange({ projection: 'SIN' })}
+            >
+              {t.projection.sin}
+            </button>
+            <button
+              type="button"
+              aria-pressed={view.projection === 'TAN'}
+              title={t.projection.tanHint}
+              onClick={() => onChange({ projection: 'TAN' })}
+            >
+              {t.projection.tan}
+            </button>
+          </div>
+        </fieldset>
+
+        <SpectralControls view={view} onChange={onChange} />
 
         <div className="toggles">
           <button type="button" onClick={onOpenSpectrum}>

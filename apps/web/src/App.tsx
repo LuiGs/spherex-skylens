@@ -14,6 +14,7 @@ import { mjdToDate, type Epoch } from './lib/epochs';
 import { hasSeenOnboarding } from './lib/onboarding';
 import { defaultTimelapseSize } from './lib/timelapse';
 import { readViewState, writeViewState, type ViewState } from './lib/urlState';
+import { clampFov } from './lib/projection';
 
 export default function App() {
   const [view, setView] = useState<ViewState>(() => readViewState(window.location.search));
@@ -29,7 +30,10 @@ export default function App() {
   const [timelapseCenter, setTimelapseCenter] = useState(() => ({ ra: view.ra, dec: view.dec }));
 
   const update = useCallback((patch: Partial<ViewState>) => {
-    setView((v) => ({ ...v, ...patch }));
+    setView((v) => {
+      const next = { ...v, ...patch };
+      return { ...next, fov: clampFov(next.fov, next.projection) };
+    });
     if (patch.ra !== undefined || patch.dec !== undefined || patch.fov !== undefined) setSelectedEpoch(null);
   }, []);
   const openTimelapse = useCallback(() => {

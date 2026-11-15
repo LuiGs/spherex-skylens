@@ -6,13 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .irsa import IrsaClient
+from .spectral import SpectralTiles
 from .jpl import JplClient
-from .routers import observations, solar_system, spectrum, timelapse
+from .routers import observations, solar_system, spectral, spectrum, timelapse
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.irsa = IrsaClient(get_settings())
+    app.state.spectral = SpectralTiles(app.state.irsa, get_settings())
     app.state.timelapse = timelapse.TimelapseService(app.state.irsa, get_settings())
     app.state.jpl = JplClient(get_settings())
     yield
@@ -32,6 +34,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(observations.router)
     app.include_router(timelapse.router)
+    app.include_router(spectral.router)
     app.include_router(spectrum.router)
     app.include_router(solar_system.router)
 

@@ -13,6 +13,7 @@ declare module 'aladin-lite' {
 
   interface AladinLiteApi {
     init: Promise<void>;
+    HiPS: (url: string, options: Record<string, unknown>) => unknown;
     aladin: (element: HTMLElement, options: Record<string, unknown>) => any;
     catalogFromVizieR: (...args: any[]) => any;
     catalogFromURL: (
