@@ -2,7 +2,7 @@
 
 | Pieza | Servicio |
 | --- | --- |
-| Web (`apps/web`) | **Azure Static Web Apps** (plan Free): HTTPS, necesario para el modo AR, y un preview por PR |
+| Web (`apps/web`) | **Azure Static Web Apps** (plan Free): HTTPS, necesario para el modo AR, y preview en los PRs con la label `preview` |
 | API (`apps/api`) | **Azure Container Apps** (consumo, escala a 0), imagen construida desde el `Dockerfile` en **Azure Container Registry** |
 | Dominio | Global Offer GoDaddy Registry (registrado con Porkbun) → dominio custom en Static Web Apps |
 
@@ -28,7 +28,7 @@ dominio de la web (`SKYLENS_CORS_ORIGINS`).
 
    La primera imagen de la API se construye con Docker local (`linux/amd64`) porque las suscripciones de prueba no
    permiten ACR Tasks (`az acr build`).
-4. Listo: cada PR recibe un preview de Static Web Apps y cada push a `main` despliega web y API.
+4. Listo: cada push a `main` despliega web y API. Para tener un preview de Static Web Apps en un PR, agregale la label `preview` (el plan Free admite solo 3 previews a la vez; al cerrar el PR o quitar la label se borra).
 
 Mientras `AZURE_RESOURCE_GROUP` no exista, los workflows de deploy se saltean y el CI sigue funcionando.
 
