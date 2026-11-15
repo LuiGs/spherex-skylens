@@ -6,7 +6,6 @@ import { attachSkyDrag } from '../lib/skyDrag';
 import { MAX_FOV, MIN_FOV } from '../lib/projection';
 import { spectralSurveyUrl, SPECTRAL_HIPS_OPTIONS, WISE_HIPS_URL } from '../lib/spherex';
 import { GAIA_VIZIER_MIRRORS, gaiaConeUrl, motionArrows } from '../lib/gaia';
-import { SPHEREX_HIPS_URL, WISE_HIPS_URL } from '../lib/spherex';
 import type { SmallBody } from '../lib/api';
 import { shortName } from '../lib/solarSystem';
 import type { ViewState } from '../lib/urlState';
