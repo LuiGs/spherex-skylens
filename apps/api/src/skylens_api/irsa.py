@@ -14,7 +14,8 @@ _DETECTOR_RE = re.compile(r"SPHEREx-D(\d)")
 
 
 def build_cutout_url(access_url: str, ra: float, dec: float, size_deg: float) -> str:
-    return f"{access_url}?center={ra},{dec}d&size={size_deg}"
+    # IRSA answers 503 when `center` carries a unit suffix such as "d".
+    return f"{access_url}?center={ra},{dec}&size={size_deg}"
 
 
 def parse_sia_csv(text: str, ra: float, dec: float, size_deg: float) -> list[Observation]:
@@ -59,11 +60,14 @@ class IrsaClient:
 
     async def fetch_cutout(self, url: str) -> bytes:
         """Fetch a cutout through the same retry policy as SIA requests."""
-        response = await self._get_with_retry(url, [])
+        response = await self._get_with_retry(url)
         return response.content
 
-    async def _get_with_retry(self, url: str, params: list[tuple[str, str]]) -> httpx.Response:
-        """IRSA intermittently answers 502/503 ("Server busy"); retry those with exponential backoff."""
+    async def _get_with_retry(self, url: str, params: list[tuple[str, str]] | None = None) -> httpx.Response:
+        """IRSA intermittently answers 502/503 ("Server busy"); retry those with exponential backoff.
+
+        `params=None` keeps the query already in `url`: httpx drops it when given an empty list.
+        """
         attempts = self._settings.http_retries + 1
         for attempt in range(attempts):
             response = await self._client.get(url, params=params)
