@@ -1003,6 +1003,33 @@ input[type='range'].spectrum-slider::-moz-range-track {
   filter: invert(0.85);
 }
 
+.body-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.body-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+}
+
+.body-name {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: #8fe3a3;
+}
+
+.body-meta {
+  font-size: 0.74rem;
+  color: var(--ink-dim);
+}
+
 .epoch-details {
   margin: 2px 0 4px;
   padding: 0 4px;

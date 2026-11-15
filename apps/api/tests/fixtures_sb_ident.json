@@ -1,0 +1,75 @@
+{
+ "signature": {
+  "source": "NASA/JPL Small-Body Identification API",
+  "version": "1.1"
+ },
+ "summary": {
+  "fov-dec-hwidth": "0.5",
+  "req-elem": "false",
+  "suppress-first-pass": "true",
+  "fov-ra-center": "12-00-00",
+  "fov-dec-center": "00-00-00",
+  "mag-required": "true",
+  "two-pass": "true",
+  "mpc-code": "500",
+  "obs-time": "2025-05-05 16:48:00",
+  "vmag-lim": "20",
+  "fov-ra-hwidth": "0.5"
+ },
+ "sb_constraints": {
+  "sb-kind": "a"
+ },
+ "fields_second": [
+  "Object name",
+  "Astrometric RA (hh:mm:ss)",
+  "Astrometric Dec (dd mm'ss\")",
+  "Dist. from center RA (\")",
+  "Dist. from center Dec (\")",
+  "Dist. from center Norm (\")",
+  "Visual magnitude (V)",
+  "RA rate (\"/h)",
+  "Dec rate (\"/h)"
+ ],
+ "observer": {
+  "fov_center": "12:00:00.00, +00 00'00.00\" (J2000)",
+  "obs_date": "2025-May-05 16:48:00 (2460801.200000 UT)",
+  "fov_offset": "00:02:00.00, +00 30'00.00\"",
+  "location": "Geocentric"
+ },
+ "n_second_pass": 3,
+ "data_second_pass": [
+  [
+   "8891 Irokawa (1994 RC1)",
+   "12:00:19.26",
+   "-00 22'19.0\"",
+   "289.",
+   "-1.E3",
+   "1370.",
+   "18.8",
+   "-1.052E+01",
+   "8.617E+00"
+  ],
+  [
+   "11670 Fountain (1998 AU9)",
+   "11:58:45.56",
+   "+00 19'44.8\"",
+   "-1.E3",
+   "1.E3",
+   "1628.",
+   "18.1",
+   "-9.575E+00",
+   "3.347E+00"
+  ],
+  [
+   "37946 (1998 HH20)",
+   "11:59:31.22",
+   "+00 09'34.5\"",
+   "-432.",
+   "575.",
+   "718.6",
+   "18.5",
+   "1.921E+00",
+   "2.136E+01"
+  ]
+ ]
+}

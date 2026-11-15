@@ -7,6 +7,7 @@ import { TimelapsePlayer } from './components/TimelapsePlayer';
 import { CHALLENGE_TARGETS } from './data/targets';
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
 import { useObservations } from './hooks/useObservations';
+import { useSmallBodies } from './hooks/useSmallBodies';
 import { useSkyPointing } from './hooks/useSkyPointing';
 import { dateToMjd, predictPosition, type Equatorial } from './lib/astro';
 import { mjdToDate, type Epoch } from './lib/epochs';
@@ -19,6 +20,7 @@ export default function App() {
   const [view, setView] = useState<ViewState>(() => readViewState(window.location.search));
   const [showGaia, setShowGaia] = useState(false);
   const [gaiaMotion, setGaiaMotion] = useState<{ years: number; count: number } | null>(null);
+  const [showSolarSystem, setShowSolarSystem] = useState(false);
   const [selectedEpoch, setSelectedEpoch] = useState<Epoch | null>(null);
   const [spectrumAt, setSpectrumAt] = useState<Equatorial | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
@@ -56,6 +58,7 @@ export default function App() {
     }
     return dateToMjd(new Date());
   }, [observationsState, selectedEpoch]);
+  const smallBodies = useSmallBodies(showSolarSystem, view.ra, view.dec, markerMjd);
   const targetPosition = useMemo(() => (target ? predictPosition(target, markerMjd) : null), [target, markerMjd]);
   const targetDate = useMemo(() => mjdToDate(markerMjd).toISOString().slice(0, 10), [markerMjd]);
   const timelapseBox = useMemo(
@@ -73,6 +76,7 @@ export default function App() {
       <SkyView
         view={view}
         showGaia={showGaia}
+        smallBodies={smallBodies.status === 'ready' ? smallBodies.bodies : null}
         onViewChange={update}
         targetPosition={targetPosition}
         timelapseBox={timelapseBox}
@@ -84,6 +88,9 @@ export default function App() {
         showGaia={showGaia}
         onToggleGaia={() => setShowGaia((s) => !s)}
         gaiaMotion={showGaia ? gaiaMotion : null}
+        showSolarSystem={showSolarSystem}
+        onToggleSolarSystem={() => setShowSolarSystem((s) => !s)}
+        smallBodies={smallBodies}
         pointingStatus={pointing.status}
         onTogglePointing={() => (pointing.status === 'active' ? pointing.stop() : pointing.start())}
         observationsState={observationsState}

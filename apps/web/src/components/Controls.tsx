@@ -5,6 +5,9 @@ import { dateToMjd, predictPosition, type Equatorial } from '../lib/astro';
 import { formatEpochSummary, type Epoch } from '../lib/epochs';
 import { SpectralControls } from './SpectralControls';
 import { useI18n } from '../lib/i18n';
+import type { SmallBodiesState } from '../hooks/useSmallBodies';
+import { shortName, skyRate } from '../lib/solarSystem';
+import { mjdToDate } from '../lib/epochs';
 import { resolveSearch } from '../lib/resolver';
 import type { ViewState } from '../lib/urlState';
 import { ObservationsPanel } from './ObservationsPanel';
@@ -14,6 +17,9 @@ interface Props {
   onChange: (patch: Partial<ViewState>) => void;
   showGaia: boolean;
   onToggleGaia: () => void;
+  showSolarSystem: boolean;
+  onToggleSolarSystem: () => void;
+  smallBodies: SmallBodiesState;
   gaiaMotion: { years: number; count: number } | null;
   pointingStatus: string;
   onTogglePointing: () => void;
@@ -43,6 +49,9 @@ export function Controls({
   onChange,
   showGaia,
   onToggleGaia,
+  showSolarSystem,
+  onToggleSolarSystem,
+  smallBodies,
   gaiaMotion,
   pointingStatus,
   onTogglePointing,
@@ -270,11 +279,15 @@ export function Controls({
           <button type="button" onClick={onToggleGaia} aria-pressed={showGaia}>
             {t.gaia(showGaia)}
           </button>
+          <button type="button" onClick={onToggleSolarSystem} aria-pressed={showSolarSystem}>
+            {t.solarSystem(showSolarSystem)}
+          </button>
           <button type="button" onClick={onTogglePointing} aria-pressed={pointingStatus === 'active'}>
             {t.ar(pointingStatus === 'active')}
           </button>
         </div>
         {gaiaMotion && <p className="readout">{t.gaiaMotion(gaiaMotion.years, gaiaMotion.count)}</p>}
+        {showSolarSystem && <SmallBodiesReadout state={smallBodies} />}
         {view.wise > 0 && (
           <label>
             {t.wiseOpacity(Math.round(view.wise * 100))}
@@ -310,5 +323,37 @@ export function Controls({
         />
       </section>
     </aside>
+  );
+}
+
+function SmallBodiesReadout({ state }: { state: SmallBodiesState }) {
+  const { t } = useI18n();
+  const s = t.solarSystemLayer;
+  if (state.status === 'loading' || state.status === 'idle') return <p className="readout">{s.loading}</p>;
+  if (state.status === 'error') return <p className="error">{s.error}</p>;
+  const date = mjdToDate(state.mjd).toLocaleDateString(t.locale, { day: 'numeric', month: 'short', year: 'numeric' });
+  if (state.bodies.length === 0) return <p className="readout">{s.none(date)}</p>;
+  const shown = state.bodies.slice(0, 6);
+  return (
+    <div className="readout">
+      <p>{s.found(state.bodies.length, date)}</p>
+      <ul className="body-list">
+        {shown.map((body) => {
+          const rate = skyRate(body);
+          return (
+            <li key={body.name}>
+              <span className="body-name">{shortName(body.name)}</span>
+              <span className="body-meta">
+                {body.kind === 'comet' ? s.comet : s.asteroid}
+                {body.vmag !== null && ` · V ${body.vmag.toFixed(1)}`}
+                {rate !== null && ` · ${s.rate(rate)}`}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {state.bodies.length > shown.length && <p className="hint">{s.more(state.bodies.length - shown.length)}</p>}
+      <p className="hint">{s.hint}</p>
+    </div>
   );
 }
