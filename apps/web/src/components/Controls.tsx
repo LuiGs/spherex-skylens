@@ -1,8 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { CHALLENGE_TARGETS } from '../data/targets';
+import { useObservations } from '../hooks/useObservations';
 import { applyProperMotion, parseDec, parseRa } from '../lib/astro';
+import { formatEpochSummary } from '../lib/epochs';
 import { approxWavelength, frameToBandChannel, SPHEREX_CUBE_DEPTH } from '../lib/spherex';
 import type { ViewState } from '../lib/urlState';
+import { ObservationsPanel } from './ObservationsPanel';
 
 interface Props {
   view: ViewState;
@@ -14,12 +17,45 @@ interface Props {
 }
 
 const SPHEREX_EPOCH = 2025.8;
+const TABS = [
+  { key: 'search', label: 'Buscar', panelId: 'controls-search' },
+  { key: 'observations', label: 'Observaciones', panelId: 'controls-observations' },
+  { key: 'layers', label: 'Capas', panelId: 'controls-layers' },
+] as const;
+type MobileTab = (typeof TABS)[number]['key'];
 
 export function Controls({ view, onChange, showGaia, onToggleGaia, pointingStatus, onTogglePointing }: Props) {
   const [raInput, setRaInput] = useState('');
   const [decInput, setDecInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
+  const { state: observationsState, retry } = useObservations(view.ra, view.dec, view.fov);
   const { band, channel } = frameToBandChannel(view.frame);
+  const observationCount = observationsState.status === 'ready' ? observationsState.data.count : 0;
+  const summary =
+    observationsState.status === 'ready'
+      ? formatEpochSummary(observationsState.epochs)
+      : observationsState.status === 'idle' || observationsState.status === 'loading'
+        ? 'Buscando observaciones…'
+        : observationsState.status === 'empty'
+          ? 'Sin observaciones'
+          : observationsState.status === 'error'
+            ? 'Observaciones no disponibles'
+            : '';
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, current: MobileTab) => {
+    const index = TABS.findIndex((tab) => tab.key === current);
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % TABS.length;
+    if (event.key === 'ArrowLeft') nextIndex = (index - 1 + TABS.length) % TABS.length;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = TABS.length - 1;
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const nextTab = TABS[nextIndex];
+    setMobileTab(nextTab.key);
+    window.requestAnimationFrame(() => document.getElementById(`tab-${nextTab.key}`)?.focus());
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -44,55 +80,106 @@ export function Controls({ view, onChange, showGaia, onToggleGaia, pointingStatu
   };
 
   return (
-    <aside className="controls">
-      <h1>SPHEREx SkyLens</h1>
-      <form onSubmit={submit} className="coords">
-        <input aria-label="Ascensión recta" placeholder="RA (08h55m10.8s)" value={raInput} onChange={(e) => setRaInput(e.target.value)} />
-        <input aria-label="Declinación" placeholder="Dec (-7d14m42s)" value={decInput} onChange={(e) => setDecInput(e.target.value)} />
-        <button type="submit">Ir</button>
-      </form>
-      {error && <p className="error">{error}</p>}
-
-      <label>
-        Objetivos del challenge
-        <select defaultValue="" onChange={(e) => goToTarget(e.target.value)}>
-          <option value="" disabled>
-            Elegí un objeto…
-          </option>
-          {CHALLENGE_TARGETS.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Banda D{band} · canal {channel} · ~{approxWavelength(view.frame).toFixed(2)} µm
-        <input
-          type="range"
-          min={0}
-          max={SPHEREX_CUBE_DEPTH - 1}
-          value={view.frame}
-          onChange={(e) => onChange({ frame: Number(e.target.value) })}
-        />
-      </label>
-
-      <div className="toggles">
-        <button type="button" onClick={onToggleGaia} aria-pressed={showGaia}>
-          {showGaia ? 'Ocultar' : 'Mostrar'} Gaia DR3
-        </button>
-        <button type="button" onClick={onTogglePointing} aria-pressed={pointingStatus === 'active'}>
-          {pointingStatus === 'active' ? 'Detener' : 'Apuntar con el celular'}
-        </button>
+    <aside className={`controls${mobileTab ? ' mobile-expanded' : ''}`} data-mobile-tab={mobileTab ?? 'collapsed'}>
+      <h1 className="controls-title">SPHEREx SkyLens</h1>
+      <div className="mobile-tabs" role="tablist" aria-label="Controles del mapa">
+        {TABS.map((tab, index) => (
+          <button
+            id={`tab-${tab.key}`}
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-controls={tab.panelId}
+            aria-selected={mobileTab === tab.key}
+            tabIndex={mobileTab === tab.key || (mobileTab === null && index === 0) ? 0 : -1}
+            onClick={() => setMobileTab((current) => (current === tab.key ? null : tab.key))}
+            onKeyDown={(event) => handleTabKeyDown(event, tab.key)}
+          >
+            {tab.key === 'observations' ? `${tab.label} · ${observationCount}` : tab.label}
+          </button>
+        ))}
       </div>
-      {(pointingStatus === 'denied' || pointingStatus === 'unsupported') && (
-        <p className="error">Sensores no disponibles ({pointingStatus}). Usá HTTPS y permití ubicación/orientación.</p>
+      {summary && (
+        <p className="mobile-summary" aria-live="polite">
+          {summary}
+        </p>
       )}
 
-      <p className="readout">
-        RA {view.ra.toFixed(5)}° · Dec {view.dec.toFixed(5)}° · FoV {view.fov.toFixed(3)}°
-      </p>
+      <section
+        id="controls-search"
+        className="control-section search-section"
+        role="tabpanel"
+        aria-labelledby="tab-search"
+      >
+        <form onSubmit={submit} className="coords">
+          <input
+            aria-label="Ascensión recta"
+            placeholder="RA (08h55m10.8s)"
+            value={raInput}
+            onChange={(e) => setRaInput(e.target.value)}
+          />
+          <input
+            aria-label="Declinación"
+            placeholder="Dec (-7d14m42s)"
+            value={decInput}
+            onChange={(e) => setDecInput(e.target.value)}
+          />
+          <button type="submit">Ir</button>
+        </form>
+        {error && <p className="error">{error}</p>}
+
+        <label>
+          Objetivos del challenge
+          <select defaultValue="" onChange={(e) => goToTarget(e.target.value)}>
+            <option value="" disabled>
+              Elegí un objeto…
+            </option>
+            {CHALLENGE_TARGETS.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <p className="readout">
+          RA {view.ra.toFixed(5)}° · Dec {view.dec.toFixed(5)}° · FoV {view.fov.toFixed(3)}°
+        </p>
+      </section>
+
+      <section id="controls-layers" className="control-section layers-section" role="tabpanel" aria-labelledby="tab-layers">
+        <label>
+          Banda D{band} · canal {channel} · ~{approxWavelength(view.frame).toFixed(2)} µm
+          <input
+            type="range"
+            min={0}
+            max={SPHEREX_CUBE_DEPTH - 1}
+            value={view.frame}
+            onChange={(e) => onChange({ frame: Number(e.target.value) })}
+          />
+        </label>
+
+        <div className="toggles">
+          <button type="button" onClick={onToggleGaia} aria-pressed={showGaia}>
+            {showGaia ? 'Ocultar' : 'Mostrar'} Gaia DR3
+          </button>
+          <button type="button" onClick={onTogglePointing} aria-pressed={pointingStatus === 'active'}>
+            {pointingStatus === 'active' ? 'Detener modo AR' : 'Modo AR: apuntar con el celular'}
+          </button>
+        </div>
+        {(pointingStatus === 'denied' || pointingStatus === 'unsupported') && (
+          <p className="error">Sensores no disponibles ({pointingStatus}). Usá HTTPS y permití ubicación/orientación.</p>
+        )}
+      </section>
+
+      <section
+        id="controls-observations"
+        className="control-section observations-section"
+        role="tabpanel"
+        aria-labelledby="tab-observations"
+      >
+        <ObservationsPanel state={observationsState} retry={retry} />
+      </section>
     </aside>
   );
 }
