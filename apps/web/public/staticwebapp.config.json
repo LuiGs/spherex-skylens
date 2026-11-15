@@ -19,5 +19,8 @@
         "cache-control": "no-cache"
       }
     }
-  ]
+  ],
+  "mimeTypes": {
+    ".webmanifest": "application/manifest+json"
+  }
 }
