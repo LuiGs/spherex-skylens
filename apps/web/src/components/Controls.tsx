@@ -35,6 +35,8 @@ interface Props {
   onOpenTimelapse: () => void;
   timelapseOpen: boolean;
   onShowHelp: () => void;
+  hidden: boolean;
+  onToggleHidden: () => void;
   onOpenSpectrum: () => void;
 }
 
@@ -68,6 +70,8 @@ export function Controls({
   onOpenTimelapse,
   timelapseOpen,
   onShowHelp,
+  hidden,
+  onToggleHidden,
   onOpenSpectrum,
 }: Props) {
   const { t, lang, setLang } = useI18n();
@@ -126,7 +130,7 @@ export function Controls({
   };
 
   return (
-    <aside className={`controls${mobileTab ? ' mobile-expanded' : ''}`} data-mobile-tab={mobileTab ?? 'collapsed'}>
+    <aside className={`controls${mobileTab ? ' mobile-expanded' : ''}${hidden ? ' controls-hidden' : ''}`} data-mobile-tab={mobileTab ?? 'collapsed'}>
       <div className="controls-heading">
         <h1 className="controls-title">
           SPHEREx SkyLens
@@ -144,6 +148,18 @@ export function Controls({
           </button>
           <button type="button" className="icon-button help-button" onClick={onShowHelp} aria-label={t.help}>
             ?
+          </button>
+          <button
+            type="button"
+            className="icon-button panel-toggle"
+            onClick={onToggleHidden}
+            aria-expanded={!hidden}
+            aria-label={t.panel(hidden)}
+            title={t.panel(hidden)}
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path d={hidden ? 'M6 3l5 5-5 5' : 'M10 3L5 8l5 5'} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
         </div>
       </div>
@@ -239,7 +255,8 @@ export function Controls({
           <kbd>A</kbd>
           <kbd>S</kbd>
           <kbd>D</kbd> {t.keys.move} · <kbd>+</kbd>
-          <kbd>−</kbd> {t.keys.zoom}
+          <kbd>−</kbd> {t.keys.zoom} · <kbd>H</kbd> {t.keys.panel} · <kbd>?</kbd> {t.keys.help} · <kbd>␣</kbd>{' '}
+          {t.keys.play}
         </p>
       </section>
 

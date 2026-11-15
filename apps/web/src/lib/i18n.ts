@@ -35,7 +35,8 @@ const es = {
   spectrum: 'Espectro',
   spectrumHere: 'Espectro en el centro',
   clearMarker: 'Quitar marcador',
-  keys: { move: 'o flechas para moverte', zoom: 'zoom', or: 'o' },
+  keys: { move: 'o flechas para moverte', zoom: 'zoom', or: 'o', panel: 'panel', help: 'ayuda', play: 'ver cambios' },
+  panel: (hidden: boolean): string => (hidden ? 'Mostrar el panel' : 'Ocultar el panel para ver todo el cielo'),
   band: (band: number, channel: number, um: string) => `Banda D${band} · canal ${channel} · ~${um} µm`,
   projection: {
     title: 'Proyección del cielo',
@@ -210,7 +211,8 @@ const en: Messages = {
   spectrum: 'Spectrum',
   spectrumHere: 'Spectrum at center',
   clearMarker: 'Remove marker',
-  keys: { move: 'or arrows to move', zoom: 'zoom', or: 'or' },
+  keys: { move: 'or arrows to move', zoom: 'zoom', or: 'or', panel: 'panel', help: 'help', play: 'see changes' },
+  panel: (hidden: boolean) => (hidden ? 'Show the panel' : 'Hide the panel to see the whole sky'),
   band: (band: number, channel: number, um: string) => `Band D${band} · channel ${channel} · ~${um} µm`,
   projection: {
     title: 'Sky projection',
