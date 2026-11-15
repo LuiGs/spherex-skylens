@@ -9,6 +9,8 @@ import type { SmallBodiesState } from '../hooks/useSmallBodies';
 import { shortName, skyRate } from '../lib/solarSystem';
 import { mjdToDate } from '../lib/epochs';
 import { resolveSearch } from '../lib/resolver';
+import { suggestFor } from '../lib/suggestions';
+import type { Suggestion } from '../data/suggestions';
 import type { ViewState } from '../lib/urlState';
 import { ObservationsPanel } from './ObservationsPanel';
 
@@ -73,6 +75,14 @@ export function Controls({
   const { t, lang, setLang } = useI18n();
   const arActive = pointingStatus === 'active' || pointingStatus === 'held';
   const [query, setQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const suggestions = searchFocused ? suggestFor(query, lang) : [];
+  const pickSuggestion = (item: Suggestion) => {
+    setQuery(item.name[lang]);
+    setError(null);
+    setSearchFocused(false);
+    onChange({ ra: item.ra, dec: item.dec, fov: item.fov, target: null });
+  };
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
@@ -183,12 +193,35 @@ export function Controls({
             placeholder={t.search.placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => window.setTimeout(() => setSearchFocused(false), 150)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setSearchFocused(false);
+              if (e.key === 'Enter' && suggestions.length === 1) {
+                e.preventDefault();
+                pickSuggestion(suggestions[0]);
+              }
+            }}
             enterKeyHint="search"
+            aria-autocomplete="list"
+            aria-controls="search-suggestions"
           />
           <button type="submit" disabled={searching}>
             {searching ? '…' : t.search.go}
           </button>
         </form>
+        {suggestions.length > 0 && (
+          <ul id="search-suggestions" className="suggestions" role="listbox" aria-label={t.search.suggestions}>
+            {suggestions.map((item) => (
+              <li key={item.id} role="option" aria-selected={false}>
+                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => pickSuggestion(item)}>
+                  <span>{item.name[lang]}</span>
+                  <small>{t.search.kinds[item.kind] ?? ''}</small>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         {error && <p className="error">{error}</p>}
 
         <div className="start-here" role="group" aria-label={t.targets.label}>
