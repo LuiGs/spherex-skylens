@@ -26,6 +26,10 @@ const es = {
   keys: { move: 'o flechas para moverte', zoom: 'zoom', or: 'o' },
   band: (band: number, channel: number, um: string) => `Banda D${band} · canal ${channel} · ~${um} µm`,
   gaia: (shown: boolean) => `${shown ? 'Ocultar' : 'Mostrar'} Gaia DR3`,
+  gaiaMotion: (years: number, count: number): string =>
+    count === 0
+      ? 'Gaia DR3: ninguna estrella del campo se mueve lo bastante rápido para dibujar flechas.'
+      : `Flechas rosas: dónde estarán ${count} ${count === 1 ? 'estrella' : 'estrellas'} dentro de ${years} años, según el movimiento propio medido por Gaia DR3.`,
   wise: (shown: boolean): string => `${shown ? 'Ocultar' : 'Comparar con'} WISE`,
   wiseOpacity: (percent: number) => `Opacidad de WISE · ${percent}%`,
   wiseHint:
@@ -142,6 +146,10 @@ const en: Messages = {
   keys: { move: 'or arrows to move', zoom: 'zoom', or: 'or' },
   band: (band: number, channel: number, um: string) => `Band D${band} · channel ${channel} · ~${um} µm`,
   gaia: (shown: boolean) => `${shown ? 'Hide' : 'Show'} Gaia DR3`,
+  gaiaMotion: (years: number, count: number): string =>
+    count === 0
+      ? 'Gaia DR3: no star in this field moves fast enough to draw arrows.'
+      : `Pink arrows: where ${count} ${count === 1 ? 'star' : 'stars'} will be in ${years} years, from Gaia DR3 proper motions.`,
   wise: (shown: boolean) => `${shown ? 'Hide' : 'Compare with'} WISE`,
   wiseOpacity: (percent: number) => `WISE opacity · ${percent}%`,
   wiseHint:

@@ -14,6 +14,7 @@ interface Props {
   onChange: (patch: Partial<ViewState>) => void;
   showGaia: boolean;
   onToggleGaia: () => void;
+  gaiaMotion: { years: number; count: number } | null;
   pointingStatus: string;
   onTogglePointing: () => void;
   observationsState: ObservationsState;
@@ -42,6 +43,7 @@ export function Controls({
   onChange,
   showGaia,
   onToggleGaia,
+  gaiaMotion,
   pointingStatus,
   onTogglePointing,
   observationsState,
@@ -252,6 +254,7 @@ export function Controls({
             {t.ar(pointingStatus === 'active')}
           </button>
         </div>
+        {gaiaMotion && <p className="readout">{t.gaiaMotion(gaiaMotion.years, gaiaMotion.count)}</p>}
         {view.wise > 0 && (
           <label>
             {t.wiseOpacity(Math.round(view.wise * 100))}
