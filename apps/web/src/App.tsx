@@ -77,7 +77,17 @@ export default function App() {
     const previous = fovBeforePointing.current;
     if (previous !== null) setView((v) => ({ ...v, fov: previous }));
   }, [pointing]);
-  useKeyboardNavigation(view, update, { allowArrows: view.timelapse === null, enabled: !showOnboarding });
+  const [panelHidden, setPanelHidden] = useState(false);
+  const togglePanel = useCallback(() => setPanelHidden((hidden) => !hidden), []);
+  useKeyboardNavigation(view, update, {
+    allowArrows: view.timelapse === null,
+    enabled: !showOnboarding,
+    actions: {
+      togglePanel,
+      help: () => setShowOnboarding(true),
+      timelapse: view.timelapse === null ? openTimelapse : undefined,
+    },
+  });
   const target = CHALLENGE_TARGETS.find((candidate) => candidate.id === view.target) ?? null;
   const markerMjd = useMemo(() => {
     if (selectedEpoch) return (selectedEpoch.mjdStart + selectedEpoch.mjdEnd) / 2;
@@ -115,6 +125,8 @@ export default function App() {
       />
       <Controls
         view={view}
+        hidden={panelHidden}
+        onToggleHidden={togglePanel}
         onChange={update}
         showGaia={showGaia}
         onToggleGaia={() => setShowGaia((s) => !s)}

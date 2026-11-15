@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_VIEW } from '../lib/urlState';
-import { keyToViewPatch } from './useKeyboardNavigation';
+import { keyToAction, keyToViewPatch } from './useKeyboardNavigation';
 
 const view = { ...DEFAULT_VIEW, ra: 10, dec: 0, fov: 1 };
 
@@ -22,5 +22,17 @@ describe('keyToViewPatch', () => {
     expect(keyToViewPatch('q', view, true)?.fov).toBeCloseTo(1.4);
     expect(keyToViewPatch('w', { ...view, dec: 89.95 }, true)).toEqual({ dec: 90 });
     expect(keyToViewPatch('x', view, true)).toBeNull();
+  });
+});
+
+describe('keyToAction', () => {
+  it('maps H, ? and Space to the panel, help and timelapse', () => {
+    const actions = { togglePanel: () => {}, help: () => {}, timelapse: () => {} };
+    expect(keyToAction('h', actions)).toBe(actions.togglePanel);
+    expect(keyToAction('H', actions)).toBe(actions.togglePanel);
+    expect(keyToAction('?', actions)).toBe(actions.help);
+    expect(keyToAction(' ', actions)).toBe(actions.timelapse);
+    expect(keyToAction(' ', {})).toBeUndefined();
+    expect(keyToAction('w', actions)).toBeUndefined();
   });
 });

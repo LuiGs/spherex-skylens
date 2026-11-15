@@ -31,18 +31,38 @@ export function keyToViewPatch(key: string, view: ViewState, allowArrows: boolea
   return null;
 }
 
+export interface ShortcutActions {
+  togglePanel?: () => void;
+  help?: () => void;
+  /** Opens the timelapse; only passed while it is closed, since the player owns Space when open. */
+  timelapse?: () => void;
+}
+
+export function keyToAction(key: string, actions: ShortcutActions): (() => void) | undefined {
+  if (key === 'h' || key === 'H') return actions.togglePanel;
+  if (key === '?') return actions.help;
+  if (key === ' ') return actions.timelapse;
+  return undefined;
+}
+
 export function useKeyboardNavigation(
   view: ViewState,
   onChange: (patch: Partial<ViewState>) => void,
-  { allowArrows, enabled }: { allowArrows: boolean; enabled: boolean },
+  { allowArrows, enabled, actions = {} }: { allowArrows: boolean; enabled: boolean; actions?: ShortcutActions },
 ) {
-  const latest = useRef({ view, onChange, allowArrows });
-  latest.current = { view, onChange, allowArrows };
+  const latest = useRef({ view, onChange, allowArrows, actions });
+  latest.current = { view, onChange, allowArrows, actions };
 
   useEffect(() => {
     if (!enabled) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey || isTyping(event.target)) return;
+      const action = keyToAction(event.key, latest.current.actions);
+      if (action) {
+        event.preventDefault();
+        action();
+        return;
+      }
       const patch = keyToViewPatch(event.key, latest.current.view, latest.current.allowArrows);
       if (!patch) return;
       event.preventDefault();
