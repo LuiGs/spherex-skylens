@@ -8,6 +8,8 @@ import { CHALLENGE_TARGETS } from './data/targets';
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
 import { useObservations } from './hooks/useObservations';
 import { useSmallBodies } from './hooks/useSmallBodies';
+import { useSkyPick } from './hooks/useSkyPick';
+import { SkyPickCard } from './components/SkyPickCard';
 
 const AR_FOV_DEG = 60;
 import { useSkyPointing } from './hooks/useSkyPointing';
@@ -31,6 +33,9 @@ export default function App() {
   // The timelapse is centred where it was opened, so panning the sky does not refetch it.
   const [timelapseCenter, setTimelapseCenter] = useState(() => ({ ra: view.ra, dec: view.dec }));
 
+  const [pick, setPick] = useState<Equatorial | null>(null);
+  const [spectrumLabel, setSpectrumLabel] = useState<string | null>(null);
+  const pickState = useSkyPick(pick, view.fov);
   const update = useCallback((patch: Partial<ViewState>) => {
     setView((v) => {
       const next = { ...v, ...patch };
@@ -40,14 +45,23 @@ export default function App() {
   }, []);
   const openTimelapse = useCallback(() => {
     setSpectrumAt(null);
+    setPick(null);
     setTimelapseCenter({ ra: view.ra, dec: view.dec });
     setView((v) => ({ ...v, timelapse: v.timelapse ?? defaultTimelapseSize(v.fov) }));
   }, [view.ra, view.dec]);
   const closeTimelapse = useCallback(() => setView((v) => ({ ...v, timelapse: null })), []);
   const openSpectrum = useCallback(() => {
     setView((v) => ({ ...v, timelapse: null }));
+    setSpectrumLabel(null);
     setSpectrumAt({ ra: view.ra, dec: view.dec });
   }, [view.ra, view.dec]);
+  const openSpectrumAtPick = useCallback(() => {
+    if (!pick) return;
+    setView((v) => ({ ...v, timelapse: null }));
+    setSpectrumLabel(pickState?.status === 'ready' ? (pickState.object?.name ?? null) : null);
+    setSpectrumAt(pick);
+    setPick(null);
+  }, [pick, pickState]);
   const closeSpectrum = useCallback(() => setSpectrumAt(null), []);
   const pointing = useSkyPointing(update);
   // A phone camera spans tens of degrees; opening the field that wide keeps hand motion in proportion.
@@ -95,6 +109,8 @@ export default function App() {
         onViewChange={update}
         targetPosition={targetPosition}
         timelapseBox={timelapseBox}
+        pick={pick}
+        onPick={setPick}
         onGaiaMotion={setGaiaMotion}
       />
       <Controls
@@ -133,10 +149,21 @@ export default function App() {
           onClose={closeTimelapse}
         />
       )}
+      {pick && (
+        <SkyPickCard
+          position={pick}
+          state={pickState}
+          onCenter={() => update({ ra: pick.ra, dec: pick.dec })}
+          onSpectrum={openSpectrumAtPick}
+          onClose={() => setPick(null)}
+        />
+      )}
       {spectrumAt && (
         <SpectrumPanel
           position={spectrumAt}
-          label={target && view.ra === spectrumAt.ra && view.dec === spectrumAt.dec ? target.name : null}
+          label={
+            spectrumLabel ?? (target && view.ra === spectrumAt.ra && view.dec === spectrumAt.dec ? target.name : null)
+          }
           onClose={closeSpectrum}
         />
       )}
