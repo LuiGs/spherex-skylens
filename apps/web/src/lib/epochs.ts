@@ -6,6 +6,7 @@ export interface Epoch {
   mjdEnd: number;
   count: number;
   byDetector: Record<number, number>;
+  observations: Observation[];
 }
 
 export function groupEpochs(observations: Observation[], gapDays = 30): Epoch[] {
@@ -29,6 +30,7 @@ export function groupEpochs(observations: Observation[], gapDays = 30): Epoch[] 
       mjdEnd: Math.max(...group.map((item) => item.mjd_start)),
       count: group.length,
       byDetector,
+      observations: group,
     };
   });
 }

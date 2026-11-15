@@ -940,3 +940,43 @@ input[type='range'].spectrum-slider::-moz-range-track {
 .aladin-btn .aladin-icon-monochrome img {
   filter: invert(0.85);
 }
+
+.epoch-details {
+  margin: 2px 0 4px;
+  padding: 0 4px;
+}
+
+.epoch-details summary {
+  cursor: pointer;
+  color: var(--accent-bright);
+  font-size: 0.78rem;
+}
+
+.image-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.image-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--line-strong);
+  font-size: 0.74rem;
+}
+
+.image-id {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--ink-muted);
+}
+
+.image-list a {
+  color: var(--accent-bright);
+  font-size: 0.72rem;
+}

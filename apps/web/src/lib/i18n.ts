@@ -66,6 +66,10 @@ const es = {
     epoch: (n: number) => `Época ${n}`,
     images: (n: number) => `${n} ${n === 1 ? 'imagen' : 'imágenes'}`,
     epochs: (n: number) => (n === 1 ? '1 época' : `${n} épocas`),
+    details: (n: number) => `Ver las ${n} ${n === 1 ? 'imagen' : 'imágenes'} de esta pasada`,
+    detailsHint:
+      'Cada imagen la tomó uno de los 6 detectores (D1–D6), cada uno en su rango de colores infrarrojos. El enlace abre el archivo original en el archivo de la NASA (IRSA).',
+    fits: 'Archivo original (FITS)',
   },
   timelapse: {
     title: 'Timelapse SPHEREx',
@@ -198,6 +202,10 @@ const en: Messages = {
     epoch: (n: number) => `Epoch ${n}`,
     images: (n: number) => `${n} ${n === 1 ? 'image' : 'images'}`,
     epochs: (n: number) => (n === 1 ? '1 epoch' : `${n} epochs`),
+    details: (n: number) => `Show the ${n} ${n === 1 ? 'image' : 'images'} from this pass`,
+    detailsHint:
+      'Each image was taken by one of the 6 detectors (D1–D6), each covering its own range of infrared colors. The link opens the original file in NASA’s archive (IRSA).',
+    fits: 'Original file (FITS)',
   },
   timelapse: {
     title: 'SPHEREx timelapse',
