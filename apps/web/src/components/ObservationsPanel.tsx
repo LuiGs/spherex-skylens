@@ -1,5 +1,6 @@
 import type { ObservationsState } from '../hooks/useObservations';
-import { formatEpochRange, type Epoch } from '../lib/epochs';
+import { formatEpochRange, mjdToDate, type Epoch } from '../lib/epochs';
+import type { Observation } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 
 interface Props {
@@ -9,6 +10,42 @@ interface Props {
   onSelectEpoch: (epoch: Epoch) => void;
   onOpenTimelapse: () => void;
   timelapseOpen: boolean;
+}
+
+function formatTime(mjd: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+    hourCycle: 'h23',
+  }).format(mjdToDate(mjd));
+}
+
+function ImageList({ observations, locale }: { observations: Observation[]; locale: string }) {
+  const { t } = useI18n();
+  const o = t.observations;
+  return (
+    <details className="epoch-details">
+      <summary>{o.details(observations.length)}</summary>
+      <p className="hint">{o.detailsHint}</p>
+      <ul className="image-list">
+        {observations.map((obs) => (
+          <li key={obs.obs_id + obs.detector}>
+            <span className="image-meta">
+              <strong>D{obs.detector}</strong> · {obs.wavelength_min_um.toFixed(2)}–{obs.wavelength_max_um.toFixed(2)} µm ·{' '}
+              {formatTime(obs.mjd_start, locale)} UTC · {collectionLabel(obs.collection)}
+            </span>
+            <span className="image-id">{obs.obs_id}</span>
+            <a href={obs.access_url} target="_blank" rel="noreferrer">
+              {o.fits}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
 }
 
 function collectionLabel(collection: string): string {
@@ -95,6 +132,9 @@ export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch, 
                       ))}
                   </span>
                 </button>
+                {selectedEpoch?.index === epoch.index && (
+                  <ImageList observations={epoch.observations} locale={t.locale} />
+                )}
               </li>
             ))}
           </ul>
