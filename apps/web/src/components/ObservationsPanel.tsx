@@ -1,5 +1,6 @@
 import type { ObservationsState } from '../hooks/useObservations';
 import { formatEpochRange, type Epoch } from '../lib/epochs';
+import { useI18n } from '../lib/i18n';
 
 interface Props {
   state: ObservationsState;
@@ -16,12 +17,14 @@ function collectionLabel(collection: string): string {
 }
 
 export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch, onOpenTimelapse, timelapseOpen }: Props) {
+  const { t } = useI18n();
+  const o = t.observations;
   return (
-    <section className="observations-panel" aria-label="Observaciones SPHEREx">
-      <h2>Observaciones SPHEREx</h2>
+    <section className="observations-panel" aria-label={o.title}>
+      <h2>{o.title}</h2>
       {(state.status === 'idle' || state.status === 'loading') && (
         <div className="observations-loading" aria-busy="true">
-          <p>Buscando observaciones…</p>
+          <p>{o.loading}</p>
           {[0, 1, 2].map((row) => (
             <div className="observation-skeleton" aria-hidden="true" key={row} />
           ))}
@@ -29,29 +32,27 @@ export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch, 
       )}
       {state.status === 'empty' && (
         <div className="observations-message">
-          <h3>Sin observaciones</h3>
-          <p>SPHEREx todavía no publicó imágenes de esta zona en DR1. Probá otro punto o uno de los objetivos.</p>
+          <h3>{o.emptyTitle}</h3>
+          <p>{o.emptyBody}</p>
         </div>
       )}
       {state.status === 'error' && (
         <div className="observations-message">
           {state.error.kind === 'busy' ? (
             <>
-              <h3>IRSA está ocupado</h3>
-              <p>El archivo de la NASA no respondió (502/503). Los datos no se perdieron: probá de nuevo en unos segundos.</p>
+              <h3>{o.busyTitle}</h3>
+              <p>{o.busyBody}</p>
             </>
           ) : (
             <>
-              <h3>No se pudo conectar con la API</h3>
+              <h3>{o.apiTitle}</h3>
               <p>
-                {state.error.status
-                  ? `La API respondió con estado ${state.error.status}.`
-                  : 'Revisá tu conexión e intentá de nuevo.'}
+                {state.error.status ? t.errors.http(state.error.status) : t.errors.network}
               </p>
             </>
           )}
           <button type="button" onClick={retry}>
-            Reintentar
+            {t.errors.retry}
           </button>
         </div>
       )}
@@ -67,7 +68,7 @@ export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch, 
           </p>
           {state.epochs.length > 1 && (
             <button type="button" className="timelapse-cta" onClick={onOpenTimelapse} disabled={timelapseOpen}>
-              ▶ Ver timelapse de {state.epochs.length} épocas
+              {o.timelapse(state.epochs.length)}
             </button>
           )}
           <ul className="epoch-list">
@@ -80,10 +81,10 @@ export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch, 
                   onClick={() => onSelectEpoch(epoch)}
                 >
                   <span className="epoch-card-heading">
-                    <strong>Época {epoch.index + 1}</strong>
-                    <span>{epoch.count} {epoch.count === 1 ? 'imagen' : 'imágenes'}</span>
+                    <strong>{o.epoch(epoch.index + 1)}</strong>
+                    <span>{o.images(epoch.count)}</span>
                   </span>
-                  <span className="epoch-date">{formatEpochRange(epoch.mjdStart, epoch.mjdEnd)}</span>
+                  <span className="epoch-date">{formatEpochRange(epoch.mjdStart, epoch.mjdEnd, t.locale)}</span>
                   <span className="detector-chips">
                     {Object.entries(epoch.byDetector)
                       .filter(([, count]) => count > 0)

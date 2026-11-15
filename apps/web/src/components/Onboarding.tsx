@@ -1,22 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import { markOnboardingSeen } from '../lib/onboarding';
 
-const STEPS = [
-  {
-    title: 'El cielo infrarrojo de SPHEREx',
-    body: 'SPHEREx es un telescopio de la NASA que mapea todo el cielo en 102 colores infrarrojos, invisibles para el ojo. Acá ves sus imágenes reales, servidas por NASA/IPAC IRSA.',
-  },
-  {
-    title: 'Movete por el cielo',
-    body: 'Arrastrá para moverte y usá la rueda o el pellizco para hacer zoom. En PC también podés usar W A S D o las flechas, y + / − para el zoom. En el celular, activá el modo AR y apuntá el teléfono al cielo.',
-  },
-  {
-    title: 'Encontrá lo que se mueve',
-    body: 'Las estrellas lejanas parecen fijas; las enanas marrones cercanas o un posible “Planeta X” cambian de lugar entre las pasadas de SPHEREx. Elegí un objetivo del challenge y tocá “Ver si se mueve” para comparar las épocas.',
-  },
-];
 
 export function Onboarding({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
+  const STEPS = t.onboarding.steps;
   const [step, setStep] = useState(0);
   const primary = useRef<HTMLButtonElement>(null);
   const last = step === STEPS.length - 1;
@@ -43,15 +32,15 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
         </div>
         <div className="onboarding-actions">
           <button type="button" className="secondary" onClick={finish}>
-            Saltar
+            {t.onboarding.skip}
           </button>
           {step > 0 && (
             <button type="button" className="secondary" onClick={() => setStep(step - 1)}>
-              Atrás
+              {t.onboarding.back}
             </button>
           )}
           <button ref={primary} type="button" onClick={() => (last ? finish() : setStep(step + 1))}>
-            {last ? 'Empezar a explorar' : 'Siguiente'}
+            {last ? t.onboarding.start : t.onboarding.next}
           </button>
         </div>
       </div>

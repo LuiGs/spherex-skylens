@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../lib/api';
+import { useI18n } from '../lib/i18n';
 import type { Equatorial } from '../lib/astro';
 import {
   fetchSpectrum,
@@ -30,6 +31,8 @@ interface Props {
 }
 
 export function SpectrumPanel({ position, label, onClose }: Props) {
+  const { t } = useI18n();
+  const sp = t.spectrumPanel;
   const [state, setState] = useState<State>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -67,15 +70,18 @@ export function SpectrumPanel({ position, label, onClose }: Props) {
   const y = (flux: number) => MARGIN.top + scale(Math.min(yRange[1], Math.max(yRange[0], flux)), yRange, PLOT_H, true);
 
   return (
-    <section className="timelapse spectrum" aria-label="Espectro SPHEREx">
+    <section className="timelapse spectrum" aria-label={sp.title}>
       <header className="timelapse-header">
         <div>
-          <h2>Espectro SPHEREx{label ? ` · ${label}` : ''}</h2>
+          <h2>
+            {sp.title}
+            {label ? ` · ${label}` : ''}
+          </h2>
           <p>
             RA {position.ra.toFixed(4)}° Dec {position.dec.toFixed(4)}° · 0.75–5 µm
           </p>
         </div>
-        <button type="button" className="icon-button" onClick={onClose} aria-label="Cerrar espectro">
+        <button type="button" className="icon-button" onClick={onClose} aria-label={sp.close}>
           ✕
         </button>
       </header>
@@ -84,9 +90,9 @@ export function SpectrumPanel({ position, label, onClose }: Props) {
         <div className="timelapse-message spectrum-message" aria-live="polite" aria-busy="true">
           <div className="spinner" aria-hidden="true" />
           <p>
-            Leyendo un píxel de cada foto de SPHEREx… {elapsed} s
+            {sp.loading(elapsed)}
             <br />
-            <small>Unas 60 imágenes de los 6 detectores; la primera vez tarda ~30 s.</small>
+            <small>{sp.loadingHint}</small>
           </p>
         </div>
       )}
@@ -94,11 +100,13 @@ export function SpectrumPanel({ position, label, onClose }: Props) {
         <div className="timelapse-message spectrum-message">
           <p>
             {state.error.kind === 'busy'
-              ? 'IRSA (el archivo de la NASA) está ocupado. Probá de nuevo en unos segundos.'
-              : state.error.message}
+              ? t.errors.busy
+              : state.error.status
+                ? t.errors.http(state.error.status)
+                : t.errors.network}
           </p>
           <button type="button" onClick={() => setAttempt((value) => value + 1)}>
-            Reintentar
+            {t.errors.retry}
           </button>
         </div>
       )}
@@ -106,8 +114,8 @@ export function SpectrumPanel({ position, label, onClose }: Props) {
         <div className="timelapse-message spectrum-message">
           <p>
             {state.data.n_saturated > state.data.n_images / 2
-              ? 'Este objeto es tan brillante que satura el detector de SPHEREx (está pensado para objetos débiles), así que no se puede medir su espectro. Probá con un objeto más tenue.'
-              : 'No hay imágenes de SPHEREx utilizables en este punto todavía.'}
+              ? sp.saturated
+              : sp.empty}
           </p>
         </div>
       )}
@@ -117,7 +125,7 @@ export function SpectrumPanel({ position, label, onClose }: Props) {
             className="spectrum-chart"
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             role="img"
-            aria-label={`Espectro con ${points.length} mediciones entre 0.75 y 5 micrones`}
+            aria-label={sp.chartLabel(points.length)}
           >
             {SPECTRAL_FEATURES.map((feature) => (
               <g key={`${feature.label}-${feature.um}`} className="spectrum-feature">
@@ -164,9 +172,8 @@ export function SpectrumPanel({ position, label, onClose }: Props) {
             ))}
           </svg>
           <p className="timelapse-caption">
-            {points.length} mediciones de {state.data.n_images} imágenes · brillo en MJy/sr sin luz zodiacal ·{' '}
-            {state.data.n_available} imágenes disponibles en IRSA
-            {state.data.n_saturated > 0 && ` · ${state.data.n_saturated} descartadas por saturación`}
+            {sp.caption(points.length, state.data.n_images, state.data.n_available)}
+            {state.data.n_saturated > 0 && sp.droppedSaturated(state.data.n_saturated)}
           </p>
           <div className="detector-legend" aria-hidden="true">
             {DETECTOR_COLORS.map((color, index) => (
@@ -177,11 +184,7 @@ export function SpectrumPanel({ position, label, onClose }: Props) {
           </div>
         </>
       )}
-      <p className="timelapse-hint">
-        Cada punto es una foto distinta: SPHEREx tiene filtros que cambian de color a lo largo del detector, así que
-        cada vez que pasa, el objeto cae en otra longitud de onda. Juntando las fotos se arma el espectro, la “huella
-        química” del objeto: las caídas marcan moléculas como agua (H₂O) o metano (CH₄), típicas de enanas marrones.
-      </p>
+      <p className="timelapse-hint">{sp.explain}</p>
     </section>
   );
 }
