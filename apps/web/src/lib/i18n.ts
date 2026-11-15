@@ -30,6 +30,10 @@ const es = {
     count === 0
       ? 'Gaia DR3: ninguna estrella del campo se mueve lo bastante rápido para dibujar flechas.'
       : `Flechas rosas: dónde estarán ${count} ${count === 1 ? 'estrella' : 'estrellas'} dentro de ${years} años, según el movimiento propio medido por Gaia DR3.`,
+  wise: (shown: boolean): string => `${shown ? 'Ocultar' : 'Comparar con'} WISE`,
+  wiseOpacity: (percent: number) => `Opacidad de WISE · ${percent}%`,
+  wiseHint:
+    'AllWISE (NASA, 2010–2011; 3.4, 4.6 y 22 µm) encima de SPHEREx. Algo que está en una imagen y no en la otra pudo moverse o cambiar de brillo en estos ~15 años.',
   ar: (active: boolean): string => (active ? 'Detener modo AR' : 'Modo AR: apuntar con el celular'),
   sensors: (status: string) => `Sensores no disponibles (${status}). Usá HTTPS y permití ubicación/orientación.`,
   errors: {
@@ -146,6 +150,10 @@ const en: Messages = {
     count === 0
       ? 'Gaia DR3: no star in this field moves fast enough to draw arrows.'
       : `Pink arrows: where ${count} ${count === 1 ? 'star' : 'stars'} will be in ${years} years, from Gaia DR3 proper motions.`,
+  wise: (shown: boolean) => `${shown ? 'Hide' : 'Compare with'} WISE`,
+  wiseOpacity: (percent: number) => `WISE opacity · ${percent}%`,
+  wiseHint:
+    'AllWISE (NASA, 2010–2011; 3.4, 4.6 and 22 µm) on top of SPHEREx. Something present in one image but not the other may have moved or changed brightness over these ~15 years.',
   ar: (active: boolean) => (active ? 'Stop AR mode' : 'AR mode: point your phone'),
   sensors: (status: string) => `Sensors unavailable (${status}). Use HTTPS and allow location/orientation.`,
   errors: {

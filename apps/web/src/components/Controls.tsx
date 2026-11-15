@@ -240,6 +240,13 @@ export function Controls({
           <button type="button" onClick={onOpenSpectrum}>
             {t.spectrumHere}
           </button>
+          <button
+            type="button"
+            onClick={() => onChange({ wise: view.wise > 0 ? 0 : 0.5 })}
+            aria-pressed={view.wise > 0}
+          >
+            {t.wise(view.wise > 0)}
+          </button>
           <button type="button" onClick={onToggleGaia} aria-pressed={showGaia}>
             {t.gaia(showGaia)}
           </button>
@@ -248,6 +255,20 @@ export function Controls({
           </button>
         </div>
         {gaiaMotion && <p className="readout">{t.gaiaMotion(gaiaMotion.years, gaiaMotion.count)}</p>}
+        {view.wise > 0 && (
+          <label>
+            {t.wiseOpacity(Math.round(view.wise * 100))}
+            <input
+              type="range"
+              min={5}
+              max={100}
+              step={5}
+              value={Math.round(view.wise * 100)}
+              onChange={(e) => onChange({ wise: Number(e.target.value) / 100 })}
+            />
+            <small className="hint">{t.wiseHint}</small>
+          </label>
+        )}
         {(pointingStatus === 'denied' || pointingStatus === 'unsupported') && (
           <p className="error">{t.sensors(pointingStatus)}</p>
         )}
