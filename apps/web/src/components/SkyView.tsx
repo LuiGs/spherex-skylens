@@ -3,6 +3,7 @@ import A from 'aladin-lite';
 import { angularDistance, normalizeDeg, type Equatorial } from '../lib/astro';
 import { createNavigationGrid } from '../lib/navigationGrid';
 import { attachSkyDrag } from '../lib/skyDrag';
+import { attachSkyTap } from '../lib/skyTap';
 import { MAX_FOV, MIN_FOV } from '../lib/projection';
 import { spectralSurveyUrl, SPECTRAL_HIPS_OPTIONS, WISE_HIPS_URL } from '../lib/spherex';
 import { GAIA_VIZIER_MIRRORS, gaiaConeUrl, motionArrows } from '../lib/gaia';
@@ -101,8 +102,11 @@ export function SkyView({
         grid.update();
         onChange.current({ fov });
       });
-      instance.on('click', ({ ra, dec, isDragging }: { ra: number; dec: number; isDragging?: boolean }) => {
-        if (!isDragging && Number.isFinite(ra) && Number.isFinite(dec)) onPickRef.current?.({ ra, dec });
+      const detachTap = attachSkyTap(element, (x, y) => {
+        const world = instance.pix2world(x, y);
+        if (world && Number.isFinite(world[0]) && Number.isFinite(world[1])) {
+          onPickRef.current?.({ ra: world[0], dec: world[1] });
+        }
       });
       instance.on('rotationChanged', grid.update);
       instance.on('projectionChanged', grid.update);
@@ -111,9 +115,10 @@ export function SkyView({
       cleanupNavigation = () => {
         grid.dispose();
         detachDrag();
+        detachTap();
         element.removeEventListener('AL:position.changed', grid.update);
         element.removeEventListener('AL:zoom.changed', grid.update);
-        for (const event of ['positionChanged', 'zoomChanged', 'rotationChanged', 'projectionChanged', 'click']) {
+        for (const event of ['positionChanged', 'zoomChanged', 'rotationChanged', 'projectionChanged']) {
           instance.on(event, undefined);
         }
       };
