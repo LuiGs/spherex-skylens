@@ -49,3 +49,24 @@ class TimelapseResponse(BaseModel):
     height: int
     stretch: TimelapseStretch
     epochs: list[TimelapseEpoch]
+
+
+class SpectralPoint(BaseModel):
+    wavelength_um: float
+    bandwidth_um: float
+    flux: float = Field(description="Surface brightness at the position minus zodiacal light, in MJy/sr")
+    error: float
+    detector: int
+    mjd: float
+    obs_id: str
+
+
+class SpectrumResponse(BaseModel):
+    ra: float
+    dec: float
+    unit: str = "MJy/sr"
+    n_images: int
+    n_available: int
+    n_saturated: int = Field(description="Samples dropped because the source saturates the detector")
+    n_flagged: int = Field(description="Samples dropped because of other bad-pixel flags")
+    points: list[SpectralPoint]
