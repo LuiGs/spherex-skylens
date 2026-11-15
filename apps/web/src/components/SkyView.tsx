@@ -6,8 +6,8 @@ import { attachSkyDrag } from '../lib/skyDrag';
 import { MAX_FOV, MIN_FOV } from '../lib/projection';
 import { spectralSurveyUrl, SPECTRAL_HIPS_OPTIONS, WISE_HIPS_URL } from '../lib/spherex';
 import { GAIA_VIZIER_MIRRORS, gaiaConeUrl, motionArrows } from '../lib/gaia';
-import { SPHEREX_HIPS_URL, WISE_HIPS_URL } from '../lib/spherex';
 import type { SmallBody } from '../lib/api';
+import { pickRadiusDeg } from '../lib/simbad';
 import { shortName } from '../lib/solarSystem';
 import type { ViewState } from '../lib/urlState';
 import { useI18n } from '../lib/i18n';
@@ -20,13 +20,26 @@ interface Props {
   onViewChange: (patch: Partial<ViewState>) => void;
   targetPosition: Equatorial | null;
   timelapseBox: (Equatorial & { size: number }) | null;
+  /** Point the user tapped to ask "what's here?", or null. */
+  pick: Equatorial | null;
+  onPick?: (position: Equatorial) => void;
   /** Reports the time span and number of Gaia motion arrows drawn, or null when hidden. */
   onGaiaMotion?: (motion: { years: number; count: number } | null) => void;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- aladin-lite ships without types */
 
-export function SkyView({ view, showGaia, smallBodies, onViewChange, targetPosition, timelapseBox, onGaiaMotion }: Props) {
+export function SkyView({
+  view,
+  showGaia,
+  smallBodies,
+  onViewChange,
+  targetPosition,
+  timelapseBox,
+  pick,
+  onPick,
+  onGaiaMotion,
+}: Props) {
   const { t } = useI18n();
   const surveyUrl = spectralSurveyUrl(view);
   const isComposite = view.spectralMode === 'color';
@@ -48,6 +61,9 @@ export function SkyView({ view, showGaia, smallBodies, onViewChange, targetPosit
   const latestView = useRef(view);
   latestView.current = view;
   const reportedCenter = useRef<Equatorial | null>(null);
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
+  const pickOverlay = useRef<any>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +101,9 @@ export function SkyView({ view, showGaia, smallBodies, onViewChange, targetPosit
         grid.update();
         onChange.current({ fov });
       });
+      instance.on('click', ({ ra, dec, isDragging }: { ra: number; dec: number; isDragging?: boolean }) => {
+        if (!isDragging && Number.isFinite(ra) && Number.isFinite(dec)) onPickRef.current?.({ ra, dec });
+      });
       instance.on('rotationChanged', grid.update);
       instance.on('projectionChanged', grid.update);
       element.addEventListener('AL:position.changed', grid.update);
@@ -94,7 +113,7 @@ export function SkyView({ view, showGaia, smallBodies, onViewChange, targetPosit
         detachDrag();
         element.removeEventListener('AL:position.changed', grid.update);
         element.removeEventListener('AL:zoom.changed', grid.update);
-        for (const event of ['positionChanged', 'zoomChanged', 'rotationChanged', 'projectionChanged']) {
+        for (const event of ['positionChanged', 'zoomChanged', 'rotationChanged', 'projectionChanged', 'click']) {
           instance.on(event, undefined);
         }
       };
@@ -235,6 +254,27 @@ export function SkyView({ view, showGaia, smallBodies, onViewChange, targetPosit
       if (markerOverlay.current === overlay) markerOverlay.current = null;
     };
   }, [ready, targetPosition]);
+
+  useEffect(() => {
+    const instance = aladin.current;
+    if (!instance || !ready) return;
+    if (pickOverlay.current) {
+      instance.removeOverlay(pickOverlay.current);
+      pickOverlay.current = null;
+    }
+    if (!pick) return;
+    const color = '#8fd3ff';
+    const overlay = A.graphicOverlay({ name: 'Punto elegido', color, lineWidth: 1.5 });
+    instance.addOverlay(overlay);
+    pickOverlay.current = overlay;
+    overlay.add(A.circle(pick.ra, pick.dec, pickRadiusDeg(view.fov), { color, lineWidth: 1.5, fill: false }));
+    return () => {
+      instance.removeOverlay(overlay);
+      if (pickOverlay.current === overlay) pickOverlay.current = null;
+    };
+    // The circle keeps the radius it had when tapped.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, pick]);
 
   useEffect(() => {
     const instance = aladin.current;
