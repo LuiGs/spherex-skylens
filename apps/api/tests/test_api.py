@@ -14,7 +14,7 @@ FIXTURE = (Path(__file__).parent / "fixtures_sia.csv").read_text()
 def test_parse_sia_csv_sorts_by_time_and_detector() -> None:
     obs = parse_sia_csv(FIXTURE, 133.795129, -7.245147, 0.05)
     assert [(o.mjd_start, o.detector) for o in obs] == [(60800.700028, 3), (60800.700028, 6), (60990.1, 1)]
-    assert obs[0].cutout_url.endswith("a_D3.fits?center=133.795129,-7.245147d&size=0.05")
+    assert obs[0].cutout_url.endswith("a_D3.fits?center=133.795129,-7.245147&size=0.05")
     assert round(obs[0].wavelength_min_um, 4) == 1.6301
 
 
@@ -56,3 +56,17 @@ def test_observations_endpoint_maps_irsa_errors_to_502(monkeypatch) -> None:
         response = client.get("/api/v1/observations", params={"ra": 10, "dec": 10})
     get_settings.cache_clear()
     assert response.status_code == 502
+
+
+def test_cors_allows_preview_hosts_matching_the_regex(monkeypatch) -> None:
+    monkeypatch.setenv("SKYLENS_CORS_ORIGINS", '["https://app.example.net"]')
+    monkeypatch.setenv("SKYLENS_CORS_ORIGIN_REGEX", r"https://app-\d+\.example\.net")
+    get_settings.cache_clear()
+    try:
+        client = TestClient(create_app())
+        allowed = client.get("/health", headers={"Origin": "https://app-12.example.net"})
+        denied = client.get("/health", headers={"Origin": "https://evil.example.net"})
+    finally:
+        get_settings.cache_clear()
+    assert allowed.headers["access-control-allow-origin"] == "https://app-12.example.net"
+    assert "access-control-allow-origin" not in denied.headers

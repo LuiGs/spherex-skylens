@@ -13,6 +13,7 @@ dependencies = [
     "pillow>=13.0.0",
     "pydantic-settings>=2.16.3",
     "reproject>=0.21.0",
+    "scipy>=1.18.1",
     "uvicorn[standard]>=0.54.0",
 ]
 

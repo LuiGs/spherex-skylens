@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .irsa import IrsaClient
-from .routers import observations, spectral, timelapse
+from .routers import observations, spectral, spectrum, timelapse
 from .spectral import SpectralTiles
 
 
@@ -22,10 +22,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="SPHEREx SkyLens API", version="0.1.0", lifespan=lifespan)
-    app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["GET"], allow_headers=["*"])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_origin_regex=settings.cors_origin_regex,
+        allow_methods=["GET"],
+        allow_headers=["*"],
+    )
     app.include_router(observations.router)
     app.include_router(timelapse.router)
     app.include_router(spectral.router)
+    app.include_router(spectrum.router)
 
     @app.get("/health", tags=["meta"])
     async def health() -> dict[str, str]:

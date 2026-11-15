@@ -1,5 +1,6 @@
 import { SPHEREX_CUBE_DEPTH } from './spherex';
 import { clampFov, type SkyProjection } from './projection';
+import { TIMELAPSE_SIZES } from './timelapse';
 
 export interface ViewState {
   ra: number;
@@ -11,6 +12,9 @@ export interface ViewState {
   spectralMode: 'mono' | 'color';
   projection: SkyProjection;
   target: string | null;
+  /** Cutout size (deg) of the open timelapse, or null when it is closed. */
+  timelapse: number | null;
+  detector: number | null;
 }
 
 export const DEFAULT_VIEW: ViewState = {
@@ -23,6 +27,8 @@ export const DEFAULT_VIEW: ViewState = {
   spectralMode: 'mono',
   projection: 'SIN',
   target: null,
+  timelapse: null,
+  detector: null,
 };
 
 const num = (v: string | null, fallback: number) => {
@@ -48,6 +54,8 @@ export function readViewState(search: string): ViewState {
     spectralMode: p.get('mode') === 'color' ? 'color' : 'mono',
     projection,
     target: p.get('target') || null,
+    timelapse: TIMELAPSE_SIZES.find((size) => size.deg === Number(p.get('tl')))?.deg ?? null,
+    detector: [1, 2, 3, 4, 5, 6].includes(Number(p.get('det'))) ? Number(p.get('det')) : null,
   };
 }
 
@@ -63,5 +71,7 @@ export function writeViewState(state: ViewState): string {
     projection: state.projection,
   });
   if (state.target) p.set('target', state.target);
+  if (state.timelapse) p.set('tl', String(state.timelapse));
+  if (state.detector) p.set('det', String(state.detector));
   return `?${p.toString()}`;
 }

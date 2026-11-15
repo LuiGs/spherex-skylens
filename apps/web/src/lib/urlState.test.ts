@@ -20,6 +20,12 @@ describe('url state', () => {
     expect(readViewState('?target=wise-0855').target).toBe('wise-0855');
   });
 
+  it('round-trips an open timelapse and its detector', () => {
+    const state = { ...DEFAULT_VIEW, spectralMode: 'color' as const, minFrame: 15, maxFrame: 80, projection: 'TAN' as const, target: 'wise-0855', timelapse: 0.06, detector: 4 };
+    expect(readViewState(writeViewState(state))).toEqual(state);
+    expect(readViewState('?tl=0.5&det=9')).toMatchObject({ timelapse: null, detector: null });
+  });
+
   it('falls back to defaults on invalid values', () => {
     expect(readViewState('?ra=abc')).toEqual(DEFAULT_VIEW);
   });

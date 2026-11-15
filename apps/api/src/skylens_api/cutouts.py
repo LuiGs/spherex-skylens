@@ -14,6 +14,8 @@ from astropy.io import fits
 from .irsa import IrsaClient
 
 _COMPACT_EXTENSIONS = ("IMAGE", "FLAGS", "VARIANCE", "ZODI")
+# Per-pixel wavelength lookup table used by the spectrum endpoint.
+_OPTIONAL_EXTENSIONS = ("WCS-WAVE",)
 
 
 class CutoutStore:
@@ -42,6 +44,7 @@ class CutoutStore:
                         fits.ImageHDU(data=source[name].data.copy(), header=source[name].header.copy(), name=name)
                         for name in _COMPACT_EXTENSIONS
                     ],
+                    *[source[name].copy() for name in _OPTIONAL_EXTENSIONS if name in source],
                 ]
             )
             path.parent.mkdir(parents=True, exist_ok=True)

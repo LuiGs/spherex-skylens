@@ -167,3 +167,21 @@ export function predictPosition(target: Target, mjd: number): Equatorial {
     dec: delta / DEG + deltaDelta,
   };
 }
+
+/**
+ * Exponential smoothing of a pointing direction on the unit sphere, so jittery phone sensors
+ * do not shake the view and RA does not jump when crossing 0°/360°.
+ */
+export function smoothPointing(previous: Equatorial | null, next: Equatorial, alpha: number): Equatorial {
+  if (!previous) return next;
+  const toVector = ({ ra, dec }: Equatorial) => [
+    Math.cos(dec * DEG) * Math.cos(ra * DEG),
+    Math.cos(dec * DEG) * Math.sin(ra * DEG),
+    Math.sin(dec * DEG),
+  ];
+  const a = toVector(previous);
+  const b = toVector(next);
+  const [x, y, z] = a.map((value, i) => value + alpha * (b[i] - value));
+  const norm = Math.hypot(x, y, z) || 1;
+  return { ra: normalizeDeg(Math.atan2(y, x) / DEG), dec: Math.asin(z / norm) / DEG };
+}

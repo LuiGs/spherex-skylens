@@ -43,20 +43,20 @@ interface DateParts {
   year: string;
 }
 
-function dateParts(mjd: number): DateParts {
-  const parts = new Intl.DateTimeFormat('es-AR', {
+function dateParts(mjd: number, locale: string): DateParts {
+  const parts = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',
   }).formatToParts(mjdToDate(mjd));
   const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
-  return { day: get('day'), month: get('month').replace('.', '').toLocaleLowerCase('es-AR'), year: get('year') };
+  return { day: get('day'), month: get('month').replace('.', '').toLocaleLowerCase(locale), year: get('year') };
 }
 
-export function formatEpochRange(start: number, end: number): string {
-  const first = dateParts(start);
-  const last = dateParts(end);
+export function formatEpochRange(start: number, end: number, locale = 'es-AR'): string {
+  const first = dateParts(start, locale);
+  const last = dateParts(end, locale);
   if (first.year !== last.year) {
     return `${first.day} ${first.month} ${first.year} – ${last.day} ${last.month} ${last.year}`;
   }
@@ -66,13 +66,17 @@ export function formatEpochRange(start: number, end: number): string {
   return `${first.day}–${last.day} ${last.month} ${last.year}`;
 }
 
-export function formatEpochSummary(epochs: Epoch[]): string {
+export function formatEpochSummary(
+  epochs: Epoch[],
+  locale = 'es-AR',
+  countLabel: (n: number) => string = (n) => (n === 1 ? '1 época' : `${n} épocas`),
+): string {
   if (!epochs.length) return '';
   const monthYear = (mjd: number) =>
-    new Intl.DateTimeFormat('es-AR', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+    new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' })
       .format(mjdToDate(mjd))
       .replace('.', '')
-      .toLocaleLowerCase('es-AR');
-  const count = epochs.length === 1 ? '1 época' : `${epochs.length} épocas`;
+      .toLocaleLowerCase(locale);
+  const count = countLabel(epochs.length);
   return `${count} · ${monthYear(epochs[0].mjdStart)} – ${monthYear(epochs[epochs.length - 1].mjdEnd)}`;
 }

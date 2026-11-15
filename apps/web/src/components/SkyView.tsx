@@ -6,16 +6,19 @@ import { attachSkyDrag } from '../lib/skyDrag';
 import { MAX_FOV, MIN_FOV } from '../lib/projection';
 import { spectralSurveyUrl, SPECTRAL_HIPS_OPTIONS } from '../lib/spherex';
 import type { ViewState } from '../lib/urlState';
+import { useI18n } from '../lib/i18n';
 
 interface Props {
   view: ViewState;
   showGaia: boolean;
   onViewChange: (patch: Partial<ViewState>) => void;
   targetPosition: Equatorial | null;
+  timelapseBox: (Equatorial & { size: number }) | null;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- aladin-lite ships without types */
-export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props) {
+export function SkyView({ view, showGaia, onViewChange, targetPosition, timelapseBox }: Props) {
+  const { t } = useI18n();
   const surveyUrl = spectralSurveyUrl(view);
   const isComposite = view.spectralMode === 'color';
   const container = useRef<HTMLDivElement>(null);
@@ -203,6 +206,29 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
 
   useEffect(() => {
     const instance = aladin.current;
+    if (!instance || !timelapseBox) return;
+    const { ra, dec, size } = timelapseBox;
+    const half = size / 2;
+    const raHalf = half / Math.cos((dec * Math.PI) / 180);
+    const overlay = A.graphicOverlay({ name: 'Timelapse', color: '#a18cff', lineWidth: 2 });
+    instance.addOverlay(overlay);
+    overlay.add(
+      A.polyline(
+        [
+          [normalizeDeg(ra - raHalf), dec - half],
+          [normalizeDeg(ra + raHalf), dec - half],
+          [normalizeDeg(ra + raHalf), dec + half],
+          [normalizeDeg(ra - raHalf), dec + half],
+          [normalizeDeg(ra - raHalf), dec - half],
+        ],
+        { color: '#a18cff', lineWidth: 2 },
+      ),
+    );
+    return () => instance.removeOverlay(overlay);
+  }, [ready, timelapseBox]);
+
+  useEffect(() => {
+    const instance = aladin.current;
     if (!instance) return;
     const clear = () => {
       if (!gaia.current) return;
@@ -238,7 +264,7 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition }: Props)
       <div ref={container} className="sky-canvas" />
       {spectralStatus !== 'ready' && (
         <div className="spectral-status" role="status">
-          {spectralStatus === 'loading' ? 'Cargando imágenes…' : 'Esperando imágenes…'}
+          {spectralStatus === 'loading' ? t.spectral.loading : t.spectral.waiting}
         </div>
       )}
     </div>
