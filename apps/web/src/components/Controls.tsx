@@ -117,7 +117,10 @@ export function Controls({
   return (
     <aside className={`controls${mobileTab ? ' mobile-expanded' : ''}`} data-mobile-tab={mobileTab ?? 'collapsed'}>
       <div className="controls-heading">
-        <h1 className="controls-title">SPHEREx SkyLens</h1>
+        <h1 className="controls-title">
+          SPHEREx SkyLens
+          <small>{t.tagline}</small>
+        </h1>
         <div className="heading-actions">
           <button
             type="button"
@@ -166,7 +169,7 @@ export function Controls({
           <input
             type="search"
             aria-label={t.search.label}
-            placeholder="M31, Barnard, 08h55m10s -7d14m42s"
+            placeholder={t.search.placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             enterKeyHint="search"
@@ -177,19 +180,24 @@ export function Controls({
         </form>
         {error && <p className="error">{error}</p>}
 
-        <label>
-          {t.targets.label}
-          <select value={view.target ?? ''} onChange={(e) => goToTarget(e.target.value)}>
-            <option value="" disabled>
-              {t.targets.placeholder}
-            </option>
-            {CHALLENGE_TARGETS.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
+        <div className="start-here" role="group" aria-label={t.targets.label}>
+          <p className="section-label">{t.targets.label}</p>
+          <ul className="target-list">
+            {CHALLENGE_TARGETS.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className="target-card"
+                  aria-pressed={view.target === item.id}
+                  onClick={() => goToTarget(item.id)}
+                >
+                  <span className="target-name">{item.name}</span>
+                  <span className="target-blurb">{t.targets.blurbs[item.id]}</span>
+                </button>
+              </li>
             ))}
-          </select>
-        </label>
+          </ul>
+        </div>
 
         {target && targetPosition ? (
           <>
@@ -229,6 +237,7 @@ export function Controls({
           {t.band(band, channel, approxWavelength(view.frame).toFixed(2))}
           <input
             type="range"
+            className="spectrum-slider"
             min={0}
             max={SPHEREX_CUBE_DEPTH - 1}
             value={view.frame}
