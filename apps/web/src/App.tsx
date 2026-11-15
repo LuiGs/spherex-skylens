@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controls } from './components/Controls';
 import { Onboarding } from './components/Onboarding';
 import { SkyView } from './components/SkyView';
+import { SpectrumPanel } from './components/SpectrumPanel';
 import { TimelapsePlayer } from './components/TimelapsePlayer';
 import { CHALLENGE_TARGETS } from './data/targets';
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
 import { useObservations } from './hooks/useObservations';
 import { useSkyPointing } from './hooks/useSkyPointing';
-import { dateToMjd, predictPosition } from './lib/astro';
+import { dateToMjd, predictPosition, type Equatorial } from './lib/astro';
 import { mjdToDate, type Epoch } from './lib/epochs';
 import { hasSeenOnboarding } from './lib/onboarding';
 import { defaultTimelapseSize } from './lib/timelapse';
@@ -17,6 +18,7 @@ export default function App() {
   const [view, setView] = useState<ViewState>(() => readViewState(window.location.search));
   const [showGaia, setShowGaia] = useState(false);
   const [selectedEpoch, setSelectedEpoch] = useState<Epoch | null>(null);
+  const [spectrumAt, setSpectrumAt] = useState<Equatorial | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
   const { state: observationsState, retry } = useObservations(view.ra, view.dec, view.fov);
 
@@ -28,10 +30,16 @@ export default function App() {
     if (patch.ra !== undefined || patch.dec !== undefined || patch.fov !== undefined) setSelectedEpoch(null);
   }, []);
   const openTimelapse = useCallback(() => {
+    setSpectrumAt(null);
     setTimelapseCenter({ ra: view.ra, dec: view.dec });
     setView((v) => ({ ...v, timelapse: v.timelapse ?? defaultTimelapseSize(v.fov) }));
   }, [view.ra, view.dec]);
   const closeTimelapse = useCallback(() => setView((v) => ({ ...v, timelapse: null })), []);
+  const openSpectrum = useCallback(() => {
+    setView((v) => ({ ...v, timelapse: null }));
+    setSpectrumAt({ ra: view.ra, dec: view.dec });
+  }, [view.ra, view.dec]);
+  const closeSpectrum = useCallback(() => setSpectrumAt(null), []);
   const pointing = useSkyPointing(update);
   useKeyboardNavigation(view, update, { allowArrows: view.timelapse === null, enabled: !showOnboarding });
   const target = CHALLENGE_TARGETS.find((candidate) => candidate.id === view.target) ?? null;
@@ -82,6 +90,7 @@ export default function App() {
         onOpenTimelapse={openTimelapse}
         timelapseOpen={view.timelapse !== null}
         onShowHelp={() => setShowOnboarding(true)}
+        onOpenSpectrum={openSpectrum}
       />
       {view.timelapse !== null && (
         <TimelapsePlayer
@@ -92,6 +101,13 @@ export default function App() {
           onDetectorChange={(detector) => update({ detector })}
           target={target}
           onClose={closeTimelapse}
+        />
+      )}
+      {spectrumAt && (
+        <SpectrumPanel
+          position={spectrumAt}
+          label={target && view.ra === spectrumAt.ra && view.dec === spectrumAt.dec ? target.name : null}
+          onClose={closeSpectrum}
         />
       )}
       {showOnboarding && <Onboarding onClose={() => setShowOnboarding(false)} />}

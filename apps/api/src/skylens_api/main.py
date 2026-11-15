@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .irsa import IrsaClient
-from .routers import observations, timelapse
+from .routers import observations, spectrum, timelapse
 
 
 @asynccontextmanager
@@ -29,6 +29,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(observations.router)
     app.include_router(timelapse.router)
+    app.include_router(spectrum.router)
 
     @app.get("/health", tags=["meta"])
     async def health() -> dict[str, str]:

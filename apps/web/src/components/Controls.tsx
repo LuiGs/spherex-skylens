@@ -26,6 +26,7 @@ interface Props {
   onOpenTimelapse: () => void;
   timelapseOpen: boolean;
   onShowHelp: () => void;
+  onOpenSpectrum: () => void;
 }
 
 const TABS = [
@@ -53,6 +54,7 @@ export function Controls({
   onOpenTimelapse,
   timelapseOpen,
   onShowHelp,
+  onOpenSpectrum,
 }: Props) {
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
@@ -185,6 +187,9 @@ export function Controls({
               <button type="button" onClick={onOpenTimelapse} disabled={timelapseOpen}>
                 ▶ Ver si se mueve
               </button>
+              <button type="button" onClick={onOpenSpectrum}>
+                Espectro
+              </button>
               <button type="button" className="remove-marker" onClick={onClearTarget}>
                 Quitar marcador
               </button>
@@ -217,6 +222,9 @@ export function Controls({
         </label>
 
         <div className="toggles">
+          <button type="button" onClick={onOpenSpectrum}>
+            Espectro en el centro
+          </button>
           <button type="button" onClick={onToggleGaia} aria-pressed={showGaia}>
             {showGaia ? 'Ocultar' : 'Mostrar'} Gaia DR3
           </button>
