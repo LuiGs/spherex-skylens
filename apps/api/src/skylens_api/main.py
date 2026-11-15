@@ -6,9 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .irsa import IrsaClient
-from .spectral import SpectralTiles
 from .jpl import JplClient
 from .routers import observations, solar_system, spectral, spectrum, timelapse
+from .spectral import SpectralTiles
 
 
 @asynccontextmanager
