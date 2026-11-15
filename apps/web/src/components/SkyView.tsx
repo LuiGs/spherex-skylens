@@ -3,11 +3,15 @@ import A from 'aladin-lite';
 import { angularDistance, normalizeDeg, type Equatorial } from '../lib/astro';
 import { GAIA_VIZIER_MIRRORS, gaiaConeUrl, motionArrows } from '../lib/gaia';
 import { SPHEREX_HIPS_URL, WISE_HIPS_URL } from '../lib/spherex';
+import type { SmallBody } from '../lib/api';
+import { shortName } from '../lib/solarSystem';
 import type { ViewState } from '../lib/urlState';
 
 interface Props {
   view: ViewState;
   showGaia: boolean;
+  /** Known asteroids and comets in the field at the displayed epoch, or null when the layer is off. */
+  smallBodies: SmallBody[] | null;
   onViewChange: (patch: Partial<ViewState>) => void;
   targetPosition: Equatorial | null;
   timelapseBox: (Equatorial & { size: number }) | null;
@@ -16,7 +20,7 @@ interface Props {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- aladin-lite ships without types */
-export function SkyView({ view, showGaia, onViewChange, targetPosition, timelapseBox, onGaiaMotion }: Props) {
+export function SkyView({ view, showGaia, smallBodies, onViewChange, targetPosition, timelapseBox, onGaiaMotion }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<any>(null);
   const survey = useRef<any>(null);
@@ -25,6 +29,7 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
   const onMotion = useRef(onGaiaMotion);
   onMotion.current = onGaiaMotion;
   const wise = useRef<any>(null);
+  const bodiesLayer = useRef<any>(null);
   const markerOverlay = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const gaiaQuery = useRef<{ ra: number; dec: number; radius: number } | null>(null);
@@ -161,6 +166,43 @@ export function SkyView({ view, showGaia, onViewChange, targetPosition, timelaps
     );
     return () => instance.removeOverlay(overlay);
   }, [ready, timelapseBox]);
+
+  useEffect(() => {
+    const instance = aladin.current;
+    if (!instance) return;
+    if (bodiesLayer.current) {
+      instance.removeLayer?.(bodiesLayer.current);
+      bodiesLayer.current = null;
+    }
+    if (!smallBodies?.length) return;
+    const catalog = A.catalog({
+      name: 'Asteroids & comets',
+      shape: 'triangle',
+      sourceSize: 16,
+      color: '#8fe3a3',
+      displayLabel: true,
+      labelColumn: 'label',
+      labelColor: '#8fe3a3',
+      labelFont: '12px ui-monospace, Menlo, monospace',
+      onClick: 'showTable',
+    });
+    catalog.addSources(
+      smallBodies.map((body) =>
+        A.source(body.ra, body.dec, {
+          label: shortName(body.name),
+          name: body.name,
+          kind: body.kind,
+          V: body.vmag ?? '',
+          'rate_"/h':
+            body.ra_rate_arcsec_h !== null && body.dec_rate_arcsec_h !== null
+              ? Math.hypot(body.ra_rate_arcsec_h, body.dec_rate_arcsec_h).toFixed(1)
+              : '',
+        }),
+      ),
+    );
+    instance.addCatalog(catalog);
+    bodiesLayer.current = catalog;
+  }, [ready, smallBodies]);
 
   useEffect(() => {
     const instance = aladin.current;

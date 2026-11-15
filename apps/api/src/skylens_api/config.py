@@ -32,6 +32,8 @@ class Settings(BaseSettings):
         "OUTLIER",
     ]
     search_cache_ttl_s: float = 3600.0
+    jpl_timeout_s: float = 180.0
+    jpl_vmag_limit: float = 20.0
     cache_dir: str = "cache/cutouts"
 
 

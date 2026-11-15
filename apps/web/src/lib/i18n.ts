@@ -42,6 +42,19 @@ const es = {
     count === 0
       ? 'Gaia DR3: ninguna estrella del campo se mueve lo bastante rápido para dibujar flechas.'
       : `Flechas rosas: dónde estarán ${count} ${count === 1 ? 'estrella' : 'estrellas'} dentro de ${years} años, según el movimiento propio medido por Gaia DR3.`,
+  solarSystem: (shown: boolean): string => `${shown ? 'Ocultar' : 'Mostrar'} asteroides y cometas`,
+  solarSystemLayer: {
+    loading: 'Preguntando a la NASA (JPL) qué asteroides y cometas pasaban por acá… puede tardar hasta un minuto.',
+    error: 'No se pudo consultar el catálogo de asteroides del JPL. Probá de nuevo en un rato.',
+    none: (date: string) => `Ningún asteroide ni cometa conocido cruzaba este campo el ${date}.`,
+    found: (n: number, date: string) =>
+      `${n} ${n === 1 ? 'cuerpo' : 'cuerpos'} del Sistema Solar en este campo el ${date} (triángulos verdes):`,
+    asteroid: 'asteroide',
+    comet: 'cometa',
+    rate: (arcsecPerHour: number) => `${arcsecPerHour.toFixed(1)}″/h`,
+    more: (n: number) => `y ${n} más en el mapa.`,
+    hint: 'Posiciones calculadas por el JPL de la NASA para la fecha de la época elegida. Un punto que aparece en una pasada y no en otra puede ser uno de ellos.',
+  },
   wise: (shown: boolean): string => `${shown ? 'Ocultar' : 'Comparar con'} WISE`,
   wiseOpacity: (percent: number) => `Opacidad de WISE · ${percent}%`,
   wiseHint:
@@ -178,6 +191,19 @@ const en: Messages = {
     count === 0
       ? 'Gaia DR3: no star in this field moves fast enough to draw arrows.'
       : `Pink arrows: where ${count} ${count === 1 ? 'star' : 'stars'} will be in ${years} years, from Gaia DR3 proper motions.`,
+  solarSystem: (shown: boolean) => `${shown ? 'Hide' : 'Show'} asteroids & comets`,
+  solarSystemLayer: {
+    loading: 'Asking NASA (JPL) which asteroids and comets were passing through here… this can take up to a minute.',
+    error: 'Could not reach the JPL asteroid catalogue. Try again in a moment.',
+    none: (date: string) => `No known asteroid or comet crossed this field on ${date}.`,
+    found: (n: number, date: string) =>
+      `${n} Solar System ${n === 1 ? 'body' : 'bodies'} in this field on ${date} (green triangles):`,
+    asteroid: 'asteroid',
+    comet: 'comet',
+    rate: (arcsecPerHour: number) => `${arcsecPerHour.toFixed(1)}″/h`,
+    more: (n: number) => `and ${n} more on the map.`,
+    hint: 'Positions computed by NASA/JPL for the date of the selected epoch. A dot that shows up in one pass and not in another may be one of them.',
+  },
   wise: (shown: boolean) => `${shown ? 'Hide' : 'Compare with'} WISE`,
   wiseOpacity: (percent: number) => `WISE opacity · ${percent}%`,
   wiseHint:
