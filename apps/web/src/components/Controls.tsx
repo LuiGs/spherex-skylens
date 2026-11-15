@@ -1,3 +1,4 @@
+import { ShareButton } from './ShareButton';
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { CHALLENGE_TARGETS, type Target } from '../data/targets';
 import type { ObservationsState } from '../hooks/useObservations';
@@ -142,6 +143,7 @@ export function Controls({
           >
             {lang === 'es' ? 'EN' : 'ES'}
           </button>
+          <ShareButton />
           <button type="button" className="icon-button help-button" onClick={onShowHelp} aria-label={t.help}>
             ?
           </button>

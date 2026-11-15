@@ -644,6 +644,16 @@ button:disabled {
   gap: 8px;
 }
 
+.share-button {
+  display: inline-grid;
+  place-items: center;
+}
+
+.share-button.copied {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .help-button {
   display: none;
   width: 30px;
