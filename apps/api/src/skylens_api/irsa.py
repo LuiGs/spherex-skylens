@@ -29,6 +29,7 @@ def parse_sia_csv(text: str, ra: float, dec: float, size_deg: float) -> list[Obs
                 collection=row.get("obs_collection", ""),
                 detector=int(match.group(1)),
                 mjd_start=float(row["t_min"]),
+                mjd_end=float(row.get("t_max") or row["t_min"]),
                 wavelength_min_um=float(row["em_min"]) * 1e6,
                 wavelength_max_um=float(row["em_max"]) * 1e6,
                 access_url=row["access_url"],
@@ -55,6 +56,11 @@ class IrsaClient:
         params += [("COLLECTION", c) for c in collections or self._settings.sia_collections]
         response = await self._get_with_retry(f"{self._settings.irsa_base_url}/SIA", params)
         return parse_sia_csv(response.text, ra, dec, size_deg)
+
+    async def fetch_cutout(self, url: str) -> bytes:
+        """Fetch a cutout through the same retry policy as SIA requests."""
+        response = await self._get_with_retry(url, [])
+        return response.content
 
     async def _get_with_retry(self, url: str, params: list[tuple[str, str]]) -> httpx.Response:
         """IRSA intermittently answers 502/503 ("Server busy"); retry those with exponential backoff."""
