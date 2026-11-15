@@ -11,6 +11,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from PIL import Image
 from reproject import reproject_interp
+from scipy import ndimage
 
 from .models import Observation
 
@@ -150,9 +151,32 @@ def shared_stretch(coadds: list[np.ndarray], percentiles: tuple[float, float]) -
     return float(low), float(high)
 
 
+def fill_holes(data: np.ndarray) -> np.ndarray:
+    """Fill masked pixels enclosed by valid ones (e.g. saturated star cores) with their brightest neighbour.
+
+    Blank areas touching the border are real gaps in coverage and stay empty.
+    """
+    missing = ~np.isfinite(data)
+    labels, count = ndimage.label(missing)
+    if not count:
+        return data
+    border = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    holes = missing & ~np.isin(labels, border)
+    filled = data.copy()
+    while holes.any():
+        neighbours = ndimage.maximum_filter(np.where(np.isfinite(filled), filled, -np.inf), size=3)
+        reachable = holes & np.isfinite(neighbours)
+        if not reachable.any():
+            break
+        filled[reachable] = neighbours[reachable]
+        holes &= ~reachable
+    return filled
+
+
 def render_png(data: np.ndarray, vmin: float, vmax: float) -> bytes:
     if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax <= vmin:
         vmin, vmax = 0.0, 1.0
+    data = fill_holes(data)
     normalized = np.clip((data - vmin) / (vmax - vmin), 0, 1)
     stretched = np.arcsinh(10 * normalized) / np.arcsinh(10)
     pixels = np.where(np.isfinite(stretched), stretched * 255, 0).astype(np.uint8)

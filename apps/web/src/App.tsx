@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controls } from './components/Controls';
 import { SkyView } from './components/SkyView';
+import { TimelapsePlayer } from './components/TimelapsePlayer';
 import { CHALLENGE_TARGETS } from './data/targets';
 import { useObservations } from './hooks/useObservations';
 import { useSkyPointing } from './hooks/useSkyPointing';
 import { dateToMjd, predictPosition } from './lib/astro';
 import { mjdToDate, type Epoch } from './lib/epochs';
+import { defaultTimelapseSize } from './lib/timelapse';
 import { readViewState, writeViewState, type ViewState } from './lib/urlState';
 
 export default function App() {
@@ -14,10 +16,18 @@ export default function App() {
   const [selectedEpoch, setSelectedEpoch] = useState<Epoch | null>(null);
   const { state: observationsState, retry } = useObservations(view.ra, view.dec, view.fov);
 
+  // The timelapse is centred where it was opened, so panning the sky does not refetch it.
+  const [timelapseCenter, setTimelapseCenter] = useState(() => ({ ra: view.ra, dec: view.dec }));
+
   const update = useCallback((patch: Partial<ViewState>) => {
     setView((v) => ({ ...v, ...patch }));
     if (patch.ra !== undefined || patch.dec !== undefined || patch.fov !== undefined) setSelectedEpoch(null);
   }, []);
+  const openTimelapse = useCallback(() => {
+    setTimelapseCenter({ ra: view.ra, dec: view.dec });
+    setView((v) => ({ ...v, timelapse: v.timelapse ?? defaultTimelapseSize(v.fov) }));
+  }, [view.ra, view.dec]);
+  const closeTimelapse = useCallback(() => setView((v) => ({ ...v, timelapse: null })), []);
   const pointing = useSkyPointing(update);
   const target = CHALLENGE_TARGETS.find((candidate) => candidate.id === view.target) ?? null;
   const markerMjd = useMemo(() => {
@@ -30,6 +40,10 @@ export default function App() {
   }, [observationsState, selectedEpoch]);
   const targetPosition = useMemo(() => (target ? predictPosition(target, markerMjd) : null), [target, markerMjd]);
   const targetDate = useMemo(() => mjdToDate(markerMjd).toISOString().slice(0, 10), [markerMjd]);
+  const timelapseBox = useMemo(
+    () => (view.timelapse ? { ...timelapseCenter, size: view.timelapse } : null),
+    [timelapseCenter, view.timelapse],
+  );
 
   useEffect(() => {
     const id = window.setTimeout(() => window.history.replaceState(null, '', writeViewState(view)), 300);
@@ -38,7 +52,13 @@ export default function App() {
 
   return (
     <main className="app">
-      <SkyView view={view} showGaia={showGaia} onViewChange={update} targetPosition={targetPosition} />
+      <SkyView
+        view={view}
+        showGaia={showGaia}
+        onViewChange={update}
+        targetPosition={targetPosition}
+        timelapseBox={timelapseBox}
+      />
       <Controls
         view={view}
         onChange={update}
@@ -54,7 +74,20 @@ export default function App() {
         targetPosition={targetPosition}
         targetDate={targetDate}
         onClearTarget={() => update({ target: null })}
+        onOpenTimelapse={openTimelapse}
+        timelapseOpen={view.timelapse !== null}
       />
+      {view.timelapse !== null && (
+        <TimelapsePlayer
+          center={timelapseCenter}
+          size={view.timelapse}
+          onSizeChange={(size) => update({ timelapse: size })}
+          detector={view.detector}
+          onDetectorChange={(detector) => update({ detector })}
+          target={target}
+          onClose={closeTimelapse}
+        />
+      )}
     </main>
   );
 }

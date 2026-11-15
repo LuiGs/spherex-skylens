@@ -22,6 +22,8 @@ interface Props {
   targetPosition: Equatorial | null;
   targetDate: string;
   onClearTarget: () => void;
+  onOpenTimelapse: () => void;
+  timelapseOpen: boolean;
 }
 
 const TABS = [
@@ -46,6 +48,8 @@ export function Controls({
   targetPosition,
   targetDate,
   onClearTarget,
+  onOpenTimelapse,
+  timelapseOpen,
 }: Props) {
   const [raInput, setRaInput] = useState('');
   const [decInput, setDecInput] = useState('');
@@ -166,9 +170,14 @@ export function Controls({
               {targetPosition.dec.toFixed(6)}°
             </p>
             <p className="readout target-source">{target.source}</p>
-            <button type="button" className="remove-marker" onClick={onClearTarget}>
-              Quitar marcador
-            </button>
+            <div className="toggles">
+              <button type="button" onClick={onOpenTimelapse} disabled={timelapseOpen}>
+                ▶ Ver si se mueve
+              </button>
+              <button type="button" className="remove-marker" onClick={onClearTarget}>
+                Quitar marcador
+              </button>
+            </div>
           </>
         ) : (
           <p className="readout">
@@ -213,6 +222,8 @@ export function Controls({
           retry={retry}
           selectedEpoch={selectedEpoch}
           onSelectEpoch={onSelectEpoch}
+          onOpenTimelapse={onOpenTimelapse}
+          timelapseOpen={timelapseOpen}
         />
       </section>
     </aside>

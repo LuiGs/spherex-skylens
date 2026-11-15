@@ -6,6 +6,8 @@ interface Props {
   retry: () => void;
   selectedEpoch: Epoch | null;
   onSelectEpoch: (epoch: Epoch) => void;
+  onOpenTimelapse: () => void;
+  timelapseOpen: boolean;
 }
 
 function collectionLabel(collection: string): string {
@@ -13,7 +15,7 @@ function collectionLabel(collection: string): string {
   return known[collection] ?? collection.toUpperCase();
 }
 
-export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch }: Props) {
+export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch, onOpenTimelapse, timelapseOpen }: Props) {
   return (
     <section className="observations-panel" aria-label="Observaciones SPHEREx">
       <h2>Observaciones SPHEREx</h2>
@@ -63,6 +65,11 @@ export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch }
               : 'SPHEREx'}{' '}
             · {state.data.count}
           </p>
+          {state.epochs.length > 1 && (
+            <button type="button" className="timelapse-cta" onClick={onOpenTimelapse} disabled={timelapseOpen}>
+              ▶ Ver timelapse de {state.epochs.length} épocas
+            </button>
+          )}
           <ul className="epoch-list">
             {state.epochs.map((epoch) => (
               <li key={epoch.index}>

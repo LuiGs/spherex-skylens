@@ -56,3 +56,17 @@ def test_observations_endpoint_maps_irsa_errors_to_502(monkeypatch) -> None:
         response = client.get("/api/v1/observations", params={"ra": 10, "dec": 10})
     get_settings.cache_clear()
     assert response.status_code == 502
+
+
+def test_cors_allows_preview_hosts_matching_the_regex(monkeypatch) -> None:
+    monkeypatch.setenv("SKYLENS_CORS_ORIGINS", '["https://app.example.net"]')
+    monkeypatch.setenv("SKYLENS_CORS_ORIGIN_REGEX", r"https://app-\d+\.example\.net")
+    get_settings.cache_clear()
+    try:
+        client = TestClient(create_app())
+        allowed = client.get("/health", headers={"Origin": "https://app-12.example.net"})
+        denied = client.get("/health", headers={"Origin": "https://evil.example.net"})
+    finally:
+        get_settings.cache_clear()
+    assert allowed.headers["access-control-allow-origin"] == "https://app-12.example.net"
+    assert "access-control-allow-origin" not in denied.headers
