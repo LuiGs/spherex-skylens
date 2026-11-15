@@ -42,4 +42,12 @@ describe('epoch dates', () => {
     expect(formatEpochRange(toMjd('2025-10-31'), toMjd('2025-12-13'))).toBe('31 oct – 13 dic 2025');
     expect(formatEpochRange(toMjd('2025-12-31'), toMjd('2026-01-02'))).toBe('31 dic 2025 – 02 ene 2026');
   });
+
+  it('keeps the observations of each epoch for the metadata list', () => {
+    const epochs = groupEpochs([
+      { obs_id: 'a', collection: 'spherex_dr1', detector: 1, mjd_start: 60800, wavelength_min_um: 0.75, wavelength_max_um: 1.1, access_url: '', cutout_url: '' },
+      { obs_id: 'b', collection: 'spherex_qr3', detector: 2, mjd_start: 60900, wavelength_min_um: 1.1, wavelength_max_um: 1.6, access_url: '', cutout_url: '' },
+    ]);
+    expect(epochs.map((e) => e.observations.map((o) => o.obs_id))).toEqual([['a'], ['b']]);
+  });
 });
