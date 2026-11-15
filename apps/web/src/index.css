@@ -1007,3 +1007,9 @@ input[type='range'].spectrum-slider::-moz-range-track {
   color: var(--accent-bright);
   font-size: 0.72rem;
 }
+
+.ar-panel {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}

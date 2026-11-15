@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controls } from './components/Controls';
 import { Onboarding } from './components/Onboarding';
 import { SkyView } from './components/SkyView';
@@ -8,6 +8,8 @@ import { CHALLENGE_TARGETS } from './data/targets';
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
 import { useObservations } from './hooks/useObservations';
 import { useSmallBodies } from './hooks/useSmallBodies';
+
+const AR_FOV_DEG = 60;
 import { useSkyPointing } from './hooks/useSkyPointing';
 import { dateToMjd, predictPosition, type Equatorial } from './lib/astro';
 import { mjdToDate, type Epoch } from './lib/epochs';
@@ -44,6 +46,19 @@ export default function App() {
   }, [view.ra, view.dec]);
   const closeSpectrum = useCallback(() => setSpectrumAt(null), []);
   const pointing = useSkyPointing(update);
+  // A phone camera spans tens of degrees; opening the field that wide keeps hand motion in proportion.
+  const fovBeforePointing = useRef<number | null>(null);
+  const startPointing = useCallback(() => {
+    fovBeforePointing.current = view.fov;
+    setView((v) => ({ ...v, fov: Math.max(v.fov, AR_FOV_DEG), timelapse: null }));
+    setSpectrumAt(null);
+    void pointing.start();
+  }, [pointing, view.fov]);
+  const stopPointing = useCallback(() => {
+    pointing.stop();
+    const previous = fovBeforePointing.current;
+    if (previous !== null) setView((v) => ({ ...v, fov: previous }));
+  }, [pointing]);
   useKeyboardNavigation(view, update, { allowArrows: view.timelapse === null, enabled: !showOnboarding });
   const target = CHALLENGE_TARGETS.find((candidate) => candidate.id === view.target) ?? null;
   const markerMjd = useMemo(() => {
@@ -88,7 +103,8 @@ export default function App() {
         onToggleSolarSystem={() => setShowSolarSystem((s) => !s)}
         smallBodies={smallBodies}
         pointingStatus={pointing.status}
-        onTogglePointing={() => (pointing.status === 'active' ? pointing.stop() : pointing.start())}
+        onTogglePointing={() => (pointing.status === 'active' || pointing.status === 'held' ? stopPointing() : startPointing())}
+        onToggleHold={pointing.toggleHold}
         observationsState={observationsState}
         retry={retry}
         selectedEpoch={selectedEpoch}

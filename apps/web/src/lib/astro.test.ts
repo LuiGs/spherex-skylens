@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  angularSeparation,
   applyProperMotion,
   dateToMjd,
   deviceOrientationToHorizontal,
@@ -134,5 +135,16 @@ describe('smoothPointing', () => {
     const half = smoothPointing({ ra: 359, dec: 0 }, { ra: 1, dec: 0 }, 0.5);
     expect(half.ra === 0 || half.ra === 360 || Math.abs(half.ra) < 1e-9 || Math.abs(half.ra - 360) < 1e-9).toBe(true);
     expect(smoothPointing({ ra: 0, dec: 0 }, { ra: 0, dec: 10 }, 0.25).dec).toBeGreaterThan(2);
+  });
+});
+
+describe('angularSeparation', () => {
+  it('is zero for the same point and 90° between pole and equator', () => {
+    expect(angularSeparation({ ra: 10, dec: 20 }, { ra: 10, dec: 20 })).toBeCloseTo(0, 6);
+    expect(angularSeparation({ ra: 0, dec: 90 }, { ra: 123, dec: 0 })).toBeCloseTo(90, 6);
+  });
+
+  it('shrinks with cos(dec) along right ascension', () => {
+    expect(angularSeparation({ ra: 0, dec: 60 }, { ra: 2, dec: 60 })).toBeCloseTo(1, 1);
   });
 });
