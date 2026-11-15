@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { deviceOrientationToHorizontal, horizontalToEquatorial, type Equatorial } from '../lib/astro';
+import { deviceOrientationToHorizontal, horizontalToEquatorial, smoothPointing, type Equatorial } from '../lib/astro';
+
+// Weight of each new sensor reading; lower is steadier but laggier.
+const SMOOTHING = 0.2;
 
 type Status = 'idle' | 'requesting' | 'active' | 'unsupported' | 'denied';
 
@@ -18,6 +21,8 @@ interface PermissionAwareOrientation {
 export function useSkyPointing(onPointing: (p: Equatorial) => void) {
   const [status, setStatus] = useState<Status>('idle');
   const location = useRef<{ lat: number; lon: number } | null>(null);
+  const smoothed = useRef<Equatorial | null>(null);
+  const frame = useRef<number | null>(null);
   const callback = useRef(onPointing);
   callback.current = onPointing;
 
@@ -26,12 +31,22 @@ export function useSkyPointing(onPointing: (p: Equatorial) => void) {
     const alpha = e.webkitCompassHeading !== undefined ? 360 - e.webkitCompassHeading : e.alpha;
     if (alpha === null) return;
     const horizontal = deviceOrientationToHorizontal(alpha, e.beta, e.gamma);
-    callback.current(horizontalToEquatorial(horizontal, location.current.lat, location.current.lon, new Date()));
+    const pointing = horizontalToEquatorial(horizontal, location.current.lat, location.current.lon, new Date());
+    smoothed.current = smoothPointing(smoothed.current, pointing, SMOOTHING);
+    // Sensors fire faster than the screen refreshes; push at most one update per frame.
+    if (frame.current === null)
+      frame.current = window.requestAnimationFrame(() => {
+        frame.current = null;
+        if (smoothed.current) callback.current(smoothed.current);
+      });
   }, []);
 
   const stop = useCallback(() => {
     window.removeEventListener('deviceorientationabsolute', handle as EventListener);
     window.removeEventListener('deviceorientation', handle as EventListener);
+    if (frame.current !== null) window.cancelAnimationFrame(frame.current);
+    frame.current = null;
+    smoothed.current = null;
     setStatus('idle');
   }, [handle]);
 
