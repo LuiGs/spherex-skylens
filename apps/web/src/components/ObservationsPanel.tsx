@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import type { ObservationsState } from '../hooks/useObservations';
 import { formatEpochRange, type Epoch } from '../lib/epochs';
 
 interface Props {
   state: ObservationsState;
   retry: () => void;
-  onSelectEpoch?: (epoch: Epoch) => void;
+  selectedEpoch: Epoch | null;
+  onSelectEpoch: (epoch: Epoch) => void;
 }
 
 function collectionLabel(collection: string): string {
@@ -13,9 +13,7 @@ function collectionLabel(collection: string): string {
   return known[collection] ?? collection.toUpperCase();
 }
 
-export function ObservationsPanel({ state, retry, onSelectEpoch }: Props) {
-  const [selectedEpoch, setSelectedEpoch] = useState<number | null>(null);
-
+export function ObservationsPanel({ state, retry, selectedEpoch, onSelectEpoch }: Props) {
   return (
     <section className="observations-panel" aria-label="Observaciones SPHEREx">
       <h2>Observaciones SPHEREx</h2>
@@ -70,12 +68,9 @@ export function ObservationsPanel({ state, retry, onSelectEpoch }: Props) {
               <li key={epoch.index}>
                 <button
                   type="button"
-                  className={`epoch-card${selectedEpoch === epoch.index ? ' is-selected' : ''}`}
-                  aria-pressed={selectedEpoch === epoch.index}
-                  onClick={() => {
-                    setSelectedEpoch(epoch.index);
-                    onSelectEpoch?.(epoch);
-                  }}
+                  className={`epoch-card${selectedEpoch?.index === epoch.index ? ' is-selected' : ''}`}
+                  aria-pressed={selectedEpoch?.index === epoch.index}
+                  onClick={() => onSelectEpoch(epoch)}
                 >
                   <span className="epoch-card-heading">
                     <strong>Época {epoch.index + 1}</strong>

@@ -281,6 +281,23 @@ button[aria-pressed='true'] {
   opacity: 0.7;
 }
 
+.target-readout {
+  line-height: 1.4;
+  opacity: 1;
+}
+
+.target-source {
+  overflow-wrap: anywhere;
+  opacity: 0.7;
+}
+
+.remove-marker {
+  align-self: flex-start;
+  padding: 6px 9px;
+  background: #292d43;
+  border-color: #454b67;
+}
+
 @media (min-width: 600px) {
   .controls {
     top: 12px;
