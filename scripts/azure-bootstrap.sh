@@ -28,7 +28,9 @@ az staticwebapp show -g "${RG}" -n "${WEB}" -o none 2>/dev/null \
 WEB_HOST="$(az staticwebapp show -g "${RG}" -n "${WEB}" --query defaultHostname -o tsv)"
 
 echo "==> Primer deploy de la API (Container Apps). Tarda unos minutos."
-az acr build -r "${ACR}" -t "${API}:bootstrap" apps/api -o none
+# ACR Tasks (az acr build) is blocked on trial subscriptions, so build locally with Docker.
+az acr login -n "${ACR}"
+docker buildx build --platform linux/amd64 -t "${ACR}.azurecr.io/${API}:bootstrap" --push apps/api
 ACR_PASS="$(az acr credential show -n "${ACR}" --query 'passwords[0].value' -o tsv)"
 if az containerapp show -g "${RG}" -n "${API}" -o none 2>/dev/null; then
   az containerapp update -g "${RG}" -n "${API}" --image "${ACR}.azurecr.io/${API}:bootstrap" -o none
