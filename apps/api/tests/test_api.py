@@ -14,7 +14,7 @@ FIXTURE = (Path(__file__).parent / "fixtures_sia.csv").read_text()
 def test_parse_sia_csv_sorts_by_time_and_detector() -> None:
     obs = parse_sia_csv(FIXTURE, 133.795129, -7.245147, 0.05)
     assert [(o.mjd_start, o.detector) for o in obs] == [(60800.700028, 3), (60800.700028, 6), (60990.1, 1)]
-    assert obs[0].cutout_url.endswith("a_D3.fits?center=133.795129,-7.245147d&size=0.05")
+    assert obs[0].cutout_url.endswith("a_D3.fits?center=133.795129,-7.245147&size=0.05")
     assert round(obs[0].wavelength_min_um, 4) == 1.6301
 
 

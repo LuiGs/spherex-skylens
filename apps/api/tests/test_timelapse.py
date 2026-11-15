@@ -32,7 +32,7 @@ def observation(detector: int, start: float, obs_id: str | None = None, end: flo
         wavelength_min_um=1.0,
         wavelength_max_um=2.0,
         access_url=f"https://irsa.example/{detector}-{start}.fits",
-        cutout_url=f"https://irsa.example/{detector}-{start}.fits?center={RA},{DEC}d&size=0.01",
+        cutout_url=f"https://irsa.example/{detector}-{start}.fits?center={RA},{DEC}&size=0.01",
     )
 
 
@@ -151,6 +151,8 @@ def test_timelapse_metadata_frame_and_cached_compact_cutout(tmp_path: Path, monk
             assert body["epochs"][0]["n_images"] == 1
             assert "frame?" in body["epochs"][0]["frame_url"]
             assert cutout.call_count == 2
+            assert cutout.calls.last.request.url.params["center"] == f"{RA},{DEC}"
+            assert cutout.calls.last.request.url.params["size"] == "0.005"
 
             frame = client.get(body["epochs"][0]["frame_url"])
             assert frame.status_code == 200

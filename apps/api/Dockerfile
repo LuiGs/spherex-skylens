@@ -7,4 +7,5 @@ COPY src ./src
 RUN uv sync --frozen --no-dev
 EXPOSE 8000
 ENV PORT=8000
-CMD exec uv run --no-dev uvicorn skylens_api.main:app --host 0.0.0.0 --port "$PORT"
+ENV PATH="/app/.venv/bin:$PATH"
+CMD exec uvicorn skylens_api.main:app --host 0.0.0.0 --port "$PORT"
