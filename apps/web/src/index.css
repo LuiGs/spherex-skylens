@@ -719,7 +719,18 @@ button.secondary {
   line-height: 1.5;
 }
 
-.onboarding .onboarding-step {
+.onboarding .onboarding-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.onboarding-top .onboarding-step {
+  margin: 0;
+}
+
+.onboarding-step {
   color: var(--accent);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
