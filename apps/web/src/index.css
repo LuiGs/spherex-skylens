@@ -863,6 +863,42 @@ button.secondary {
     z-index: 2;
   }
 
+  /* Leave room for the floating language/share/help buttons so they never cover the last tab or the summary. */
+  .mobile-tabs {
+    padding-right: 100px;
+  }
+
+  .mobile-tabs button {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-summary {
+    padding-right: 100px;
+  }
+
+  .heading-actions {
+    gap: 3px;
+  }
+
+  .heading-actions .icon-button {
+    padding: 4px 6px;
+    font-size: 0.72rem;
+  }
+
+  /* The player covers the whole screen on phones so the bottom sheet does not show through underneath. */
+  .timelapse {
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    max-height: none;
+  }
+}
+
+@media (max-width: 374px) {
+  .tab-count {
+    display: none;
+  }
+
   .controls[data-mobile-tab='collapsed'] .controls-heading {
     top: auto;
     bottom: calc(12px + env(safe-area-inset-bottom));

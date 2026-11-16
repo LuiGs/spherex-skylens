@@ -13,7 +13,7 @@ const es = {
   share: 'Compartir este cielo',
   shareCopied: 'Link copiado',
   shareFailed: 'No se pudo copiar el link',
-  tabs: { search: 'Buscar', observations: 'Observaciones', layers: 'Capas', label: 'Controles del mapa' },
+  tabs: { search: 'Buscar', observations: 'Imágenes', layers: 'Capas', label: 'Controles del mapa' },
   summary: { loading: 'Buscando observaciones…', empty: 'Sin observaciones', error: 'Observaciones no disponibles' },
   search: {
     label: 'Buscar un objeto por nombre o coordenadas',
@@ -217,7 +217,7 @@ const en: Messages = {
   share: 'Share this sky',
   shareCopied: 'Link copied',
   shareFailed: 'Could not copy the link',
-  tabs: { search: 'Search', observations: 'Observations', layers: 'Layers', label: 'Map controls' },
+  tabs: { search: 'Search', observations: 'Images', layers: 'Layers', label: 'Map controls' },
   summary: { loading: 'Looking for observations…', empty: 'No observations', error: 'Observations unavailable' },
   search: {
     label: 'Search an object by name or coordinates',
