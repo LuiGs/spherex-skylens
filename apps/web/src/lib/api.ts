@@ -99,3 +99,11 @@ export async function fetchSmallBodies(
   }
   return (await response.json()) as SmallBodiesResponse;
 }
+
+/**
+ * Wakes the API as soon as the page opens: the container scales to zero when idle and takes ~20 s to start,
+ * so starting it while the viewer and the tour load hides most of that wait.
+ */
+export function wakeApi(fetchFn: typeof fetch = fetch): void {
+  void fetchFn(`${API_BASE_URL}/health`, { cache: 'no-store' }).catch(() => undefined);
+}
