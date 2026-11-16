@@ -70,3 +70,26 @@ def test_cors_allows_preview_hosts_matching_the_regex(monkeypatch) -> None:
         get_settings.cache_clear()
     assert allowed.headers["access-control-allow-origin"] == "https://app-12.example.net"
     assert "access-control-allow-origin" not in denied.headers
+
+
+@respx.mock
+def test_sia_search_is_cached_per_position_and_shared_across_sizes() -> None:
+    route = respx.get("https://irsa.ipac.caltech.edu/SIA").mock(return_value=httpx.Response(200, text=FIXTURE))
+    with TestClient(create_app()) as client:
+        first = client.get("/api/v1/observations", params={"ra": 133.795129, "dec": -7.245147, "size": 0.05})
+        second = client.get("/api/v1/observations", params={"ra": 133.79513, "dec": -7.245147, "size": 0.2})
+        client.get("/api/v1/observations", params={"ra": 133.9, "dec": -7.245147})
+    assert first.status_code == second.status_code == 200
+    assert second.json()["observations"][0]["cutout_url"].endswith("size=0.2")
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_warm_up_queries_configured_positions(monkeypatch) -> None:
+    monkeypatch.setenv("SKYLENS_WARM_POSITIONS", "[[133.795129, -7.245147]]")
+    get_settings.cache_clear()
+    route = respx.get("https://irsa.ipac.caltech.edu/SIA").mock(return_value=httpx.Response(200, text=FIXTURE))
+    with TestClient(create_app()) as client:
+        response = client.get("/api/v1/observations", params={"ra": 133.795129, "dec": -7.245147})
+    assert response.status_code == 200
+    assert route.call_count == 1
