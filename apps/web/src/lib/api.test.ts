@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, fetchObservations } from './api';
+import { ApiError, fetchObservations, wakeApi } from './api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -53,5 +53,18 @@ describe('fetchObservations', () => {
     await expect(fetchObservations({ ra: 1, dec: 2, size: 1 }, new AbortController().signal)).rejects.not.toBeInstanceOf(
       ApiError,
     );
+  });
+});
+
+describe('wakeApi', () => {
+  it('pings the health endpoint without caching and swallows failures', async () => {
+    const calls: string[] = [];
+    const failing = ((url: string) => {
+      calls.push(url);
+      return Promise.reject(new Error('offline'));
+    }) as unknown as typeof fetch;
+    expect(() => wakeApi(failing)).not.toThrow();
+    await Promise.resolve();
+    expect(calls[0]).toMatch(/\/health$/);
   });
 });
