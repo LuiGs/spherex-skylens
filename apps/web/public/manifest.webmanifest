@@ -1,7 +1,7 @@
 {
   "name": "SPHEREx SkyLens",
   "short_name": "SkyLens",
-  "description": "Explorá el cielo infrarrojo de SPHEREx (NASA) desde tu celular o PC.",
+  "description": "Explore the infrared sky of NASA's SPHEREx telescope from your phone or PC.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

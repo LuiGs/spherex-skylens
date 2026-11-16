@@ -412,12 +412,13 @@ const en: Messages = {
 
 export const MESSAGES: Record<Lang, Messages> = { es, en };
 
-export function detectLang(search: string, stored: string | null, browser: readonly string[]): Lang {
+/** English by default; `?lang=es` in the URL or a language the visitor already picked take precedence. */
+export function detectLang(search: string, stored: string | null): Lang {
   const fromUrl = new URLSearchParams(search).get('lang');
-  for (const candidate of [fromUrl, stored, ...browser.map((value) => value.slice(0, 2))]) {
+  for (const candidate of [fromUrl, stored]) {
     if (candidate === 'es' || candidate === 'en') return candidate;
   }
-  return 'es';
+  return 'en';
 }
 
 export function initialLang(): Lang {
@@ -427,7 +428,7 @@ export function initialLang(): Lang {
   } catch {
     stored = null;
   }
-  return detectLang(window.location.search, stored, navigator.languages ?? [navigator.language]);
+  return detectLang(window.location.search, stored);
 }
 
 export function storeLang(lang: Lang): void {
