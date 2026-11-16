@@ -6,6 +6,7 @@ import httpx
 from astropy import units as u
 from astropy_healpix import HEALPix
 from fastapi import APIRouter, HTTPException, Path, Query, Request, Response
+from fastapi.responses import RedirectResponse
 
 from ..spectral import WAVELENGTHS
 
@@ -25,9 +26,12 @@ async def spectral_hips(
 ) -> Response:
     if low > high:
         raise HTTPException(422, "Minimum channel must not exceed maximum channel")
+    single_channel = mode == "mono" or low == high
     if asset == "prepare":
         if ra is None or dec is None:
             raise HTTPException(422, "Sky position required")
+        if single_channel:
+            return Response('{"ready":true}', media_type="application/json", headers={"Cache-Control": "no-store"})
 
         async def warm():
             for level in sorted({order, min(order, 2)}):
@@ -71,6 +75,13 @@ async def spectral_hips(
     order, directory, pixel = map(int, match.groups())
     if pixel >= 12 * 4**order or directory != pixel // 10000 * 10000:
         raise HTTPException(404, "Invalid HiPS tile")
+    if single_channel:
+        # A single channel needs no compositing: send the browser straight to IRSA's tile for that frame.
+        return RedirectResponse(
+            request.app.state.spectral.frame_url(asset, low),
+            status_code=307,
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
     try:
         content = await request.app.state.spectral.tile(asset, low, high, monochrome=mode == "mono")
     except httpx.HTTPError as exc:

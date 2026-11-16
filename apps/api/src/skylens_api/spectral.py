@@ -23,6 +23,19 @@ WAVELENGTHS = CHANNELS["wavelengths_um"]
 BLANK = set(CHANNELS["blank_frames"])
 
 
+# Adjacent channels look alike, so a composite samples at most this many across the range:
+# a full 0.75-5 um composite fetches 12 IRSA tiles instead of 100.
+MAX_CHANNELS_PER_COMPOSITE = 12
+
+
+def sample_channels(frames: list[int], limit: int = MAX_CHANNELS_PER_COMPOSITE) -> list[int]:
+    """Evenly spaced subset of `frames` (always keeping the first and last) with at most `limit` entries."""
+    if len(frames) <= limit:
+        return frames
+    positions = np.linspace(0, len(frames) - 1, limit).round().astype(int)
+    return [frames[i] for i in dict.fromkeys(positions.tolist())]
+
+
 def channel_color(frame: int, low: int, high: int) -> tuple[float, float, float]:
     span = WAVELENGTHS[high] - WAVELENGTHS[low]
     t = (WAVELENGTHS[frame] - WAVELENGTHS[low]) / span if span else 0.5
@@ -57,7 +70,7 @@ class SpectralTiles:
         self.irsa = irsa
         self.base = f"{settings.irsa_base_url}/data/hips/SPHEREx/spherex_allsky_cube"
         self.cache = Path(settings.cache_dir).parent / "spectral-hips"
-        self.limit = asyncio.Semaphore(8)
+        self.limit = asyncio.Semaphore(16)
         self.pending: dict[str, asyncio.Task[bytes]] = {}
         self.waiters: dict[str, int] = {}
 
@@ -105,6 +118,11 @@ class SpectralTiles:
         finally:
             temporary.unlink(missing_ok=True)
 
+    def frame_url(self, asset: str, frame: int) -> str:
+        """IRSA stores channel zero without a suffix; subsequent frames use _1 ... _101."""
+        name = asset if frame == 0 else asset.removesuffix(".png") + f"_{frame}.png"
+        return f"{self.base}/{name}"
+
     async def source(self, asset: str) -> bytes:
         url = f"{self.base}/{asset}"
 
@@ -121,14 +139,12 @@ class SpectralTiles:
 
     async def tile(self, asset: str, low: int, high: int, monochrome: bool = False) -> bytes:
         async def produce() -> bytes:
-            frames = [frame for frame in range(low, high + 1) if frame not in BLANK]
+            frames = sample_channels([frame for frame in range(low, high + 1) if frame not in BLANK])
 
-            # HiPS stores channel zero without a suffix; subsequent frames use _1 ... _101.
             async def get(frame: int) -> tuple[int, bytes]:
-                name = asset if frame == 0 else asset.removesuffix(".png") + f"_{frame}.png"
-                return frame, await self.source(name)
+                return frame, await self.source(self.frame_url(asset, frame).removeprefix(f"{self.base}/"))
 
             tiles = await asyncio.gather(*(get(frame) for frame in frames))
             return await asyncio.to_thread(compose_tiles, tiles, low, high, monochrome)
 
-        return await self.cached(f"rgb-v1:{self.base}:{asset}:{low}:{high}:{monochrome}", produce)
+        return await self.cached(f"rgb-v2:{self.base}:{asset}:{low}:{high}:{monochrome}", produce)
