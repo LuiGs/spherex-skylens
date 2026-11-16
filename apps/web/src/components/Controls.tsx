@@ -188,7 +188,8 @@ export function Controls({
             onClick={() => setMobileTab((current) => (current === tab.key ? null : tab.key))}
             onKeyDown={(event) => handleTabKeyDown(event, tab.key)}
           >
-            {tab.key === 'observations' ? `${t.tabs[tab.key]} · ${observationCount}` : t.tabs[tab.key]}
+            {t.tabs[tab.key]}
+            {tab.key === 'observations' && <span className="tab-count"> · {observationCount}</span>}
           </button>
         ))}
       </div>
