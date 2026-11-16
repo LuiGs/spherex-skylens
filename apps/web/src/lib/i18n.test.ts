@@ -14,10 +14,11 @@ describe('i18n', () => {
     expect(shape(MESSAGES.en)).toEqual(shape(MESSAGES.es));
   });
 
-  it('prefers the URL, then the stored choice, then the browser', () => {
-    expect(detectLang('?lang=en', 'es', ['es-AR'])).toBe('en');
-    expect(detectLang('', 'en', ['es-AR'])).toBe('en');
-    expect(detectLang('', null, ['fr-FR', 'en-GB'])).toBe('en');
-    expect(detectLang('?lang=de', null, ['de-DE'])).toBe('es');
+  it('prefers the URL, then the stored choice, then English', () => {
+    expect(detectLang('?lang=es', 'en')).toBe('es');
+    expect(detectLang('?lang=en', 'es')).toBe('en');
+    expect(detectLang('', 'es')).toBe('es');
+    expect(detectLang('', null)).toBe('en');
+    expect(detectLang('?lang=de', null)).toBe('en');
   });
 });
