@@ -337,7 +337,7 @@ button[aria-pressed='true'] {
 .controls .spectral-toggle { flex-direction: row; align-items: center; gap: 8px; }
 .spectral-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
 .spectral-slider span { display: flex; justify-content: space-between; gap: 8px; }
-.spectral-slider input { width: 100%; accent-color: #a18cff; padding: 0; }
+.spectral-slider input { width: 100%; accent-color: var(--accent); padding: 0; }
 .spectral-control small { color: #adb8cc; font-size: 0.72rem; }
 .spectral-strip { position: relative; height: 24px; overflow: hidden; border: 1px solid #59617b; border-radius: 4px; }
 .spectral-strip span { position: absolute; top: 0; height: 100%; border-right: 1px solid #05060a88; }
@@ -366,8 +366,9 @@ button[aria-pressed='true'] {
 }
 
 .projection-options button[aria-pressed='true'] {
-  border-color: #a18cff;
-  background: #3b2e7b;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-bright);
 }
 
 .error {
@@ -838,7 +839,13 @@ button.secondary {
 
 .heading-actions {
   display: flex;
-  gap: 6px;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.heading-actions .icon-button {
+  padding: 4px 6px;
+  font-size: 0.78rem;
 }
 
 .lang-button {
@@ -882,13 +889,18 @@ h2,
 }
 
 .controls-title {
-  font-size: 1.35rem;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 1.2rem;
   line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .controls-title small {
   display: block;
   margin-top: 2px;
+  white-space: normal;
   font-family: var(--mono);
   font-size: 0.62rem;
   font-weight: 400;
