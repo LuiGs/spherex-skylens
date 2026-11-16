@@ -10,7 +10,7 @@ from PIL import Image
 
 from skylens_api.config import Settings, get_settings
 from skylens_api.main import create_app
-from skylens_api.spectral import WAVELENGTHS, SpectralTiles, channel_color, compose_tiles
+from skylens_api.spectral import WAVELENGTHS, SpectralTiles, channel_color, compose_tiles, sample_channels
 
 
 def png(value):
@@ -85,13 +85,13 @@ def test_preparation_warms_center_and_fallback_before_returning(monkeypatch):
 
     monkeypatch.setattr(SpectralTiles, "tile", tile)
     with TestClient(create_app()) as client:
-        response = client.get("/api/v1/spectral/hips/mono/10/10/prepare?ra=0&dec=89&order=5")
+        response = client.get("/api/v1/spectral/hips/color/10/20/prepare?ra=0&dec=89&order=5")
         assert response.status_code == 200
         assert response.json() == {"ready": True}
         assert len(calls) == 2
         assert calls[0][0].startswith("Norder2/")
         assert calls[1][0].startswith("Norder5/")
-        assert all(item[1:] == (10, 10, True) for item in calls)
+        assert all(item[1:] == (10, 20, False) for item in calls)
 
 
 def test_cached_jobs_survive_one_cancelled_waiter_but_cancel_when_unneeded(tmp_path):
@@ -124,3 +124,23 @@ def test_cached_jobs_survive_one_cancelled_waiter_but_cancel_when_unneeded(tmp_p
         assert job.cancelled()
 
     asyncio.run(scenario())
+
+
+def test_sample_channels_keeps_ends_and_caps_the_count():
+    frames = [f for f in range(0, 102) if f not in (50, 51)]
+    sampled = sample_channels(frames)
+    assert len(sampled) == 12
+    assert sampled[0] == 0 and sampled[-1] == 101
+    assert sampled == sorted(set(sampled))
+    assert sample_channels([3, 4, 5]) == [3, 4, 5]
+
+
+def test_single_channel_tiles_redirect_to_irsa_and_prepare_is_instant():
+    with TestClient(create_app()) as client:
+        tile = client.get("/api/v1/spectral/hips/mono/36/36/Norder3/Dir0/Npix421.png", follow_redirects=False)
+        zero = client.get("/api/v1/spectral/hips/color/0/0/Norder3/Dir0/Npix421.png", follow_redirects=False)
+        prepare = client.get("/api/v1/spectral/hips/mono/36/36/prepare", params={"ra": 10, "dec": 5, "order": 3})
+    assert tile.status_code == 307
+    assert tile.headers["location"].endswith("/spherex_allsky_cube/Norder3/Dir0/Npix421_36.png")
+    assert zero.headers["location"].endswith("/spherex_allsky_cube/Norder3/Dir0/Npix421.png")
+    assert prepare.json() == {"ready": True}
