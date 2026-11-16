@@ -4,6 +4,7 @@ import asyncio
 import csv
 import io
 import re
+import time
 
 import httpx
 
@@ -45,18 +46,52 @@ class IrsaClient:
     def __init__(self, settings: Settings, client: httpx.AsyncClient | None = None) -> None:
         self._settings = settings
         self._client = client or httpx.AsyncClient(timeout=settings.http_timeout_s)
+        self._search_cache: dict[tuple[float, float, tuple[str, ...]], tuple[float, str]] = {}
+        self._inflight: dict[tuple[float, float, tuple[str, ...]], asyncio.Future[str]] = {}
 
     async def search_spectral_images(
         self, ra: float, dec: float, size_deg: float, collections: list[str] | None = None
     ) -> list[Observation]:
-        """Simple Image Access (SIA v2) query for SPHEREx Level 2 spectral images covering a position."""
+        """Simple Image Access (SIA v2) query for SPHEREx Level 2 spectral images covering a position.
+
+        IRSA takes ~20 s per query, so the raw CSV is cached per position (rounded to ~0.4") and shared
+        by every caller: the observations list, the timelapse and the spectrum of the same spot pay once.
+        """
+        key = (round(ra, 4), round(dec, 4), tuple(collections or self._settings.sia_collections))
+        return parse_sia_csv(await self._sia_csv(key), ra, dec, size_deg)
+
+    async def _sia_csv(self, key: tuple[float, float, tuple[str, ...]]) -> str:
+        cached = self._search_cache.get(key)
+        if cached and time.monotonic() - cached[0] < self._settings.search_cache_ttl_s:
+            return cached[1]
+        task = self._inflight.get(key)
+        if task is None:
+            task = asyncio.ensure_future(self._fetch_sia_csv(key))
+            self._inflight[key] = task
+            task.add_done_callback(lambda _: self._inflight.pop(key, None))
+        text = await asyncio.shield(task)
+        self._search_cache[key] = (time.monotonic(), text)
+        while len(self._search_cache) > self._settings.search_cache_max_entries:
+            del self._search_cache[next(iter(self._search_cache))]
+        return text
+
+    async def _fetch_sia_csv(self, key: tuple[float, float, tuple[str, ...]]) -> str:
+        ra, dec, collections = key
         params: list[tuple[str, str]] = [
             ("POS", f"CIRCLE {ra} {dec} 0.0003"),
             ("RESPONSEFORMAT", "CSV"),
         ]
-        params += [("COLLECTION", c) for c in collections or self._settings.sia_collections]
+        params += [("COLLECTION", c) for c in collections]
         response = await self._get_with_retry(f"{self._settings.irsa_base_url}/SIA", params)
-        return parse_sia_csv(response.text, ra, dec, size_deg)
+        return response.text
+
+    async def warm(self, positions: list[tuple[float, float]]) -> None:
+        """Pre-queries IRSA for well-known positions so the first visitor does not wait; failures are ignored."""
+        for ra, dec in positions:
+            try:
+                await self.search_spectral_images(ra, dec, 0.05)
+            except (httpx.HTTPError, asyncio.CancelledError):
+                return
 
     async def fetch_cutout(self, url: str) -> bytes:
         """Fetch a cutout through the same retry policy as SIA requests."""

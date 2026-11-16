@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     cors_origin_regex: str | None = None
     timelapse_epoch_gap_days: float = 30.0
     timelapse_max_images_per_epoch: int = 12
-    timelapse_max_concurrency: int = 4
+    timelapse_max_concurrency: int = 8
     timelapse_pixel_scale_arcsec: float = 6.15
     timelapse_stretch_percentiles: tuple[float, float] = (0.5, 99.5)
     timelapse_bad_flags: list[str] = [
@@ -32,6 +32,15 @@ class Settings(BaseSettings):
         "OUTLIER",
     ]
     search_cache_ttl_s: float = 3600.0
+    search_cache_max_entries: int = 500
+    # Positions queried in the background at start-up (the five reference targets), as (ra, dec) in degrees.
+    warm_positions: list[tuple[float, float]] = [
+        (269.4485, 4.7394),
+        (331.0765, -56.7938),
+        (133.784, -7.2442),
+        (76.9565, 30.4013),
+        (248.1674, 66.755),
+    ]
     jpl_timeout_s: float = 180.0
     jpl_vmag_limit: float = 20.0
     cache_dir: str = "cache/cutouts"

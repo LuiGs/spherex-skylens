@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -17,7 +18,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.spectral = SpectralTiles(app.state.irsa, get_settings())
     app.state.timelapse = timelapse.TimelapseService(app.state.irsa, get_settings())
     app.state.jpl = JplClient(get_settings())
+    warm_task = asyncio.create_task(app.state.irsa.warm(get_settings().warm_positions))
     yield
+    warm_task.cancel()
     await app.state.irsa.aclose()
     await app.state.jpl.aclose()
 
